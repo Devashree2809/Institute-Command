@@ -1,7 +1,7 @@
-import React, { useState } from "react";
+import { useState } from "react";
 
 // ════════════════════════════════════════════════════════════════
-//  GAME DATA (UNTOUCHED LOGIC)
+//  GAME DATA
 // ════════════════════════════════════════════════════════════════
 
 const ARCHETYPES = [
@@ -194,7 +194,7 @@ const PARAMS = [
 ];
 
 // ════════════════════════════════════════════════════════════════
-//  SIMULATION ENGINE (UNTOUCHED)
+//  SIMULATION ENGINE
 // ════════════════════════════════════════════════════════════════
 
 function simulateYear({ kpis, params, archetype, sectors, fundingSource, deliveryMode, year, stress }) {
@@ -382,60 +382,44 @@ function simulateYear({ kpis, params, archetype, sectors, fundingSource, deliver
 }
 
 // ════════════════════════════════════════════════════════════════
-//  REFINED FORMAL STYLE HELPERS
+//  STYLE HELPERS
 // ════════════════════════════════════════════════════════════════
 
-const design = {
-  font: "'Inter', -apple-system, sans-serif",
-  fontMono: "'JetBrains Mono', 'Roboto Mono', monospace",
-  radius: "8px",
-  border: "1px solid #e2e8f0",
-  shadow: "0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)",
-  primary: "#2563eb"
-};
-
 const pill = (color, bg) => ({
-  background: bg || (color + "12"),
+  background: bg || (color + "18"),
   color,
-  borderRadius: "4px",
-  padding: "4px 10px",
-  fontSize: "10px",
-  fontWeight: 600,
-  fontFamily: design.fontMono,
+  borderRadius: 99,
+  padding: "3px 10px",
+  fontSize: 11,
+  fontWeight: 700,
+  fontFamily: "'DM Mono', monospace",
   display: "inline-flex",
   alignItems: "center",
-  textTransform: "uppercase",
-  letterSpacing: "0.05em",
-  border: `1px solid ${color}25`
+  letterSpacing: "0.02em",
 });
 
-const card = (color = "#cbd5e1", selected = false) => ({
-  background: "#ffffff",
-  border: selected ? `2px solid ${color}` : design.border,
-  borderRadius: design.radius,
-  padding: "20px",
-  boxShadow: selected ? `0 4px 6px -1px rgba(0, 0, 0, 0.1)` : design.shadow,
-  transition: "all 0.15s ease",
-  height: "100%",
-  display: "flex",
-  flexDirection: "column"
+const card = (color = "#3b82f6", glow = "rgba(59,130,246,0.1)", selected = false) => ({
+  background: "rgba(255,255,255,0.88)",
+  backdropFilter: "blur(14px)",
+  border: `1.5px solid ${selected ? color : color + "35"}`,
+  borderRadius: 14,
+  padding: "18px 20px",
+  boxShadow: selected ? `0 6px 24px ${glow}` : `0 2px 10px rgba(0,0,0,0.04)`,
+  transition: "all 0.18s",
 });
 
 const btn = (color, outline = false) => ({
-  background: outline ? "transparent" : color,
-  color: outline ? color : "#ffffff",
-  border: `1px solid ${color}`,
-  borderRadius: "6px",
-  padding: "10px 20px",
-  fontWeight: 600,
-  fontFamily: design.font,
+  background: outline ? "transparent" : `linear-gradient(135deg, ${color}, ${color}cc)`,
+  color: outline ? color : "#fff",
+  border: `2px solid ${color}`,
+  borderRadius: 10,
+  padding: "11px 24px",
+  fontWeight: 700,
+  fontFamily: "'DM Sans', sans-serif",
   cursor: "pointer",
-  fontSize: "13px",
-  transition: "filter 0.1s",
-  display: "inline-flex",
-  alignItems: "center",
-  justifyContent: "center",
-  gap: "8px"
+  fontSize: 14,
+  transition: "all 0.15s",
+  boxShadow: outline ? "none" : `0 3px 12px ${color}40`,
 });
 
 // ════════════════════════════════════════════════════════════════
@@ -445,13 +429,13 @@ const btn = (color, outline = false) => ({
 function KPIBar({ label, value, color, inverse }) {
   const displayPct = inverse ? Math.max(0, 100 - value) : Math.min(100, value);
   return (
-    <div style={{ marginBottom: 12 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, marginBottom: 5 }}>
-        <span style={{ color: "#475569", fontWeight: 500 }}>{label}</span>
-        <span style={{ fontFamily: design.fontMono, color, fontWeight: 600 }}>{typeof value === "number" ? value.toFixed(1) : value}</span>
+    <div style={{ marginBottom: 8 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 3 }}>
+        <span style={{ color: "#555" }}>{label}</span>
+        <span style={{ fontFamily: "'DM Mono',monospace", color, fontSize: 11 }}>{typeof value === "number" ? value.toFixed(1) : value}</span>
       </div>
-      <div style={{ background: "#f1f5f9", borderRadius: 4, height: 6 }}>
-        <div style={{ width: `${Math.max(2, displayPct)}%`, height: "100%", background: color, borderRadius: 4, transition: "width 0.5s ease" }} />
+      <div style={{ background: "#e2e8f0", borderRadius: 99, height: 6 }}>
+        <div style={{ width: `${Math.max(2, displayPct)}%`, height: "100%", background: `linear-gradient(90deg, ${color}, ${color}aa)`, borderRadius: 99, transition: "width 0.5s" }} />
       </div>
     </div>
   );
@@ -460,17 +444,17 @@ function KPIBar({ label, value, color, inverse }) {
 function StepIndicator({ current }) {
   const steps = ["Archetype", "Sectors", "Funding", "KPIs", "Play"];
   return (
-    <div style={{ display: "flex", gap: 0, alignItems: "center", justifyContent: "center", marginBottom: 32, flexWrap: "wrap" }}>
+    <div style={{ display: "flex", gap: 0, alignItems: "center", justifyContent: "center", marginBottom: 28 }}>
       {steps.map((s, i) => (
-        <div key={s} style={{ display: "flex", alignItems: "center", margin: "4px" }}>
+        <div key={s} style={{ display: "flex", alignItems: "center" }}>
           <div style={{
-            width: 24, height: 24, borderRadius: "4px", border: `1px solid ${i + 1 <= current ? design.primary : "#cbd5e1"}`,
-            background: i + 1 < current ? design.primary : i + 1 === current ? "#eff6ff" : "#fff",
-            color: i + 1 < current ? "#fff" : i + 1 === current ? design.primary : "#94a3b8",
-            display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700,
+            width: 28, height: 28, borderRadius: 99, border: `2px solid ${i + 1 <= current ? "#3b82f6" : "#cbd5e1"}`,
+            background: i + 1 < current ? "#3b82f6" : i + 1 === current ? "#eff6ff" : "#f8fafc",
+            color: i + 1 < current ? "#fff" : i + 1 === current ? "#3b82f6" : "#94a3b8",
+            display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700,
           }}>{i + 1 < current ? "✓" : i + 1}</div>
-          <div style={{ fontSize: 11, color: i + 1 === current ? "#0f172a" : "#64748b", fontWeight: i + 1 === current ? 600 : 400, marginLeft: 8, marginRight: 8, textTransform: "uppercase", letterSpacing: "0.02em" }}>{s}</div>
-          {i < steps.length - 1 && <div style={{ width: 16, height: 1, background: "#e2e8f0", marginRight: 8 }} className="hide-mobile" />}
+          <div style={{ fontSize: 11, color: i + 1 === current ? "#3b82f6" : "#94a3b8", fontWeight: i + 1 === current ? 700 : 400, marginLeft: 4, marginRight: 8 }}>{s}</div>
+          {i < steps.length - 1 && <div style={{ width: 20, height: 2, background: i + 1 < current ? "#3b82f6" : "#e2e8f0", marginRight: 8 }} />}
         </div>
       ))}
     </div>
@@ -478,26 +462,29 @@ function StepIndicator({ current }) {
 }
 
 // ════════════════════════════════════════════════════════════════
-//  SCREENS
+//  WELCOME SCREEN
 // ════════════════════════════════════════════════════════════════
 
 function Welcome({ onStart }) {
   return (
-    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: "40px 20px" }}>
-      <div style={{ maxWidth: 640, textAlign: "center" }}>
-        <div style={{ fontSize: 48, marginBottom: 24 }}>🏛️</div>
-        <h1 style={{ fontWeight: 800, fontSize: "clamp(32px, 5vw, 42px)", color: "#0f172a", letterSpacing: "-0.02em", marginBottom: 16 }}>
-          Institute<span style={{ color: design.primary }}>Command</span>
+    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: "40px 24px" }}>
+      <div style={{ maxWidth: 680, textAlign: "center" }}>
+        <div style={{ fontSize: 60, marginBottom: 12 }}>🏛️</div>
+        <h1 style={{ fontFamily: "'Syne',sans-serif", fontWeight: 800, fontSize: 46, color: "#0f172a", lineHeight: 1.1, marginBottom: 12 }}>
+          Institute<span style={{ color: "#2563eb" }}>Command</span>
         </h1>
-        <p style={{ fontSize: 16, color: "#475569", lineHeight: 1.6, marginBottom: 32 }}>
-          Strategic planning simulation for technical vocational education in India. Manage a 5-year scaling roadmap through policy shifts and market volatility.
+        <p style={{ fontSize: 17, color: "#475569", lineHeight: 1.75, marginBottom: 8, maxWidth: 520, margin: "0 auto 8px" }}>
+          A 5-year strategic simulation. Build and run a skilling institute in India.
         </p>
-        <div style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap", marginBottom: 40 }}>
-          {[["🎭", "Archetypes"], ["🎯", "Goals"], ["📊", "KPIs"], ["💰", "Budgeting"], ["⚡", "Market Events"]].map(([icon, label]) => (
-            <span key={label} style={pill("#475569", "#f1f5f9")}>{icon} {label}</span>
+        <p style={{ fontSize: 14, color: "#94a3b8", marginBottom: 36 }}>
+          Choose your vision → pick KPIs → allocate budget → survive market events → check if your end goal was met.
+        </p>
+        <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap", marginBottom: 36 }}>
+          {[["🎭", "5 Archetypes"], ["🎯", "3 End Goals each"], ["📊", "Choose 10 KPIs"], ["💰", "10 Budget Sliders"], ["⚡", "5 Market Events"], ["🏆", "Final Verdict"]].map(([icon, label]) => (
+            <span key={label} style={{ ...pill("#2563eb", "#eff6ff"), padding: "6px 14px", fontSize: 12 }}>{icon} {label}</span>
           ))}
         </div>
-        <button onClick={onStart} style={{ ...btn(design.primary), padding: "14px 40px", fontSize: 15, borderRadius: 8 }}>
+        <button onClick={onStart} style={{ ...btn("#2563eb"), padding: "15px 44px", fontSize: 16, borderRadius: 14 }}>
           Begin Simulation →
         </button>
       </div>
@@ -505,46 +492,47 @@ function Welcome({ onStart }) {
   );
 }
 
+// ════════════════════════════════════════════════════════════════
+//  STEP 1: ARCHETYPE + END GOAL
+// ════════════════════════════════════════════════════════════════
+
 function ArchetypeStep({ onNext }) {
   const [arch, setArch] = useState(null);
   const [goal, setGoal] = useState(null);
   const a = ARCHETYPES.find(x => x.id === arch);
 
   return (
-    <div style={{ maxWidth: 1000, margin: "0 auto", padding: "32px 20px" }}>
+    <div style={{ maxWidth: 940, margin: "0 auto", padding: "28px 20px" }}>
       <StepIndicator current={1} />
-      <div style={{ marginBottom: 24, textAlign: "center" }}>
-        <h2 style={{ fontWeight: 700, fontSize: 28, color: "#0f172a", marginBottom: 8 }}>Strategic DNA</h2>
-        <p style={{ color: "#64748b", fontSize: 14 }}>Identify your core institutional vision. This determines your operational weights.</p>
+      <div style={{ marginBottom: 20 }}>
+        <h2 style={{ fontFamily: "'Syne',sans-serif", fontWeight: 800, fontSize: 26, color: "#0f172a", marginBottom: 4 }}>Choose Your Archetype & End Goal</h2>
+        <p style={{ color: "#64748b", fontSize: 14 }}>Your archetype is your strategic DNA. Your end goal is the 5-year target you will be measured against.</p>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16, marginBottom: 32 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(250px, 1fr))", gap: 12, marginBottom: 24 }}>
         {ARCHETYPES.map(x => (
-          <div key={x.id} onClick={() => { setArch(x.id); setGoal(null); }} style={{ ...card(x.color, arch === x.id), cursor: "pointer" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12 }}>
-              <span style={{ fontSize: 24 }}>{x.icon}</span>
-              {arch === x.id && <span style={{ color: x.color, fontWeight: 700 }}>✓</span>}
-            </div>
-            <div style={{ fontWeight: 700, fontSize: 15, color: "#0f172a", marginBottom: 8 }}>{x.label}</div>
-            <p style={{ fontSize: 13, color: "#64748b", lineHeight: 1.5, marginBottom: 16, flexGrow: 1 }}>{x.desc}</p>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
-              {x.pros.slice(0, 2).map(p => <span key={p} style={{ ...pill(x.color), fontSize: 9 }}>{p}</span>)}
+          <div key={x.id} onClick={() => { setArch(x.id); setGoal(null); }} style={{ ...card(x.color, x.glow, arch === x.id), cursor: "pointer", transform: arch === x.id ? "scale(1.02)" : "scale(1)" }}>
+            <div style={{ fontSize: 28, marginBottom: 6 }}>{x.icon}</div>
+            <div style={{ fontFamily: "'Syne',sans-serif", fontWeight: 700, fontSize: 14, color: "#0f172a", marginBottom: 4 }}>{x.label}</div>
+            <p style={{ fontSize: 12, color: "#64748b", lineHeight: 1.55, marginBottom: 10 }}>{x.desc}</p>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
+              {x.pros.map(p => <span key={p} style={{ ...pill(x.color), fontSize: 10 }}>✓ {p}</span>)}
             </div>
           </div>
         ))}
       </div>
 
       {a && (
-        <div style={{ marginBottom: 32, padding: "24px", background: "#f8fafc", borderRadius: design.radius, border: design.border }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: "#64748b", marginBottom: 16, textTransform: "uppercase" }}>Primary Outcome Target</div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 12 }}>
+        <div style={{ marginBottom: 24 }}>
+          <div style={{ ...pill(a.color), marginBottom: 10 }}>SELECT END GOAL — {a.label.toUpperCase()}</div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 10 }}>
             {a.endGoals.map(g => (
-              <div key={g.id} onClick={() => setGoal(g.id)} style={{ ...card(a.color, goal === g.id), cursor: "pointer", background: "#fff", padding: "16px" }}>
-                <div style={{ fontWeight: 600, fontSize: 14, color: goal === g.id ? a.color : "#0f172a", marginBottom: 6 }}>{g.label}</div>
-                <p style={{ fontSize: 12, color: "#64748b", lineHeight: 1.4, marginBottom: 12 }}>{g.desc}</p>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+              <div key={g.id} onClick={() => setGoal(g.id)} style={{ ...card(a.color, a.glow, goal === g.id), cursor: "pointer" }}>
+                <div style={{ fontFamily: "'Syne',sans-serif", fontWeight: 700, fontSize: 13, color: goal === g.id ? a.color : "#0f172a", marginBottom: 4 }}>{g.label}</div>
+                <p style={{ fontSize: 12, color: "#64748b", lineHeight: 1.5, marginBottom: 8 }}>{g.desc}</p>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
                   {Object.entries(g.kpiTargets).map(([k, v]) => (
-                    <span key={k} style={{ fontFamily: design.fontMono, fontSize: 9, color: "#94a3b8" }}>{k.replace(/_/g, " ")}: {v}</span>
+                    <span key={k} style={{ ...pill(a.color), fontSize: 10 }}>{k.replace(/_/g, " ")}: {v}</span>
                   ))}
                 </div>
               </div>
@@ -556,12 +544,16 @@ function ArchetypeStep({ onNext }) {
       <div style={{ display: "flex", justifyContent: "flex-end" }}>
         <button onClick={() => arch && goal && onNext({ archetype: arch, endGoal: goal })}
           style={{ ...btn(a?.color || "#94a3b8"), opacity: arch && goal ? 1 : 0.4 }}>
-          Next: Sector Specialization →
+          Next: Sectors →
         </button>
       </div>
     </div>
   );
 }
+
+// ════════════════════════════════════════════════════════════════
+//  STEP 2: SECTORS
+// ════════════════════════════════════════════════════════════════
 
 function SectorStep({ archetype, onNext, onBack }) {
   const [selected, setSelected] = useState([]);
@@ -574,46 +566,51 @@ function SectorStep({ archetype, onNext, onBack }) {
   };
 
   return (
-    <div style={{ maxWidth: 1000, margin: "0 auto", padding: "32px 20px" }}>
+    <div style={{ maxWidth: 940, margin: "0 auto", padding: "28px 20px" }}>
       <StepIndicator current={2} />
-      <div style={{ marginBottom: 24, textAlign: "center" }}>
-        <h2 style={{ fontWeight: 700, fontSize: 28, color: "#0f172a", marginBottom: 8 }}>Sector Specialization</h2>
-        <p style={{ color: "#64748b", fontSize: 14 }}>Choose up to 3 industry verticals. Diversification increases resilience but decreases operational focus.</p>
+      <div style={{ marginBottom: 16 }}>
+        <h2 style={{ fontFamily: "'Syne',sans-serif", fontWeight: 800, fontSize: 26, color: "#0f172a", marginBottom: 4 }}>Choose Sector(s)</h2>
+        <p style={{ color: "#64748b", fontSize: 14 }}>Select 1–3 sectors. Each extra sector reduces focus (2 = 85%, 3 = 70%). Read the SID card before choosing.</p>
         {selected.length > 0 && (
-          <div style={{ marginTop: 12 }}>
-            <span style={pill(a.color)}>
-              {selected.length} Sector{selected.length > 1 ? 's' : ''} · Multiplier: {selected.length === 1 ? "1.00x" : selected.length === 2 ? "0.85x" : "0.70x"}
+          <div style={{ marginTop: 8 }}>
+            <span style={{ ...pill(a.color), padding: "4px 12px" }}>
+              {selected.length} selected — Focus: {selected.length === 1 ? "100%" : selected.length === 2 ? "85%" : "70%"}
             </span>
           </div>
         )}
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 12, marginBottom: 32 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(270px, 1fr))", gap: 11, marginBottom: 22 }}>
         {SECTORS.map(sec => {
           const isSel = selected.includes(sec.id);
           const exp = expanded === sec.id;
           const demandColor = { Growing: "#059669", Booming: "#059669", Stable: "#d97706", Volatile: "#dc2626", Emerging: "#7c3aed", Recovering: "#d97706" }[sec.demand] || "#64748b";
           return (
-            <div key={sec.id} style={{ ...card(a.color, isSel), cursor: "pointer" }} onClick={() => toggle(sec.id)}>
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
+            <div key={sec.id} style={{ ...card(a.color, a.glow, isSel), cursor: "pointer" }} onClick={() => toggle(sec.id)}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 }}>
                 <div>
-                  <div style={{ fontWeight: 600, fontSize: 14, color: "#0f172a" }}>{sec.label}</div>
-                  <div style={{ fontSize: 11, color: "#94a3b8", fontFamily: design.fontMono }}>{sec.salary}</div>
+                  <div style={{ fontFamily: "'Syne',sans-serif", fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 1 }}>{sec.label}</div>
+                  <div style={{ fontSize: 11, color: "#94a3b8", fontFamily: "'DM Mono',monospace" }}>{sec.salary}</div>
                 </div>
-                {isSel && <div style={{ width: 18, height: 18, borderRadius: 99, background: a.color, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10 }}>✓</div>}
+                {isSel && <span style={{ color: a.color, fontSize: 18, flexShrink: 0 }}>✓</span>}
               </div>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 12 }}>
-                <span style={pill(demandColor)}>{sec.demand}</span>
-                <span style={pill("#475569")}>CapEx: {sec.capex}</span>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 3, marginBottom: 6 }}>
+                <span style={{ ...pill("#475569"), fontSize: 10 }}>CapEx: {sec.capex}</span>
+                <span style={{ ...pill(sec.govtPriority >= 8 ? "#059669" : "#d97706"), fontSize: 10 }}>Govt: {sec.govtPriority}/10</span>
+                <span style={{ ...pill(demandColor), fontSize: 10 }}>{sec.demand}</span>
+                <span style={{ ...pill(sec.techRisk === "Very High" ? "#dc2626" : sec.techRisk === "High" ? "#c2410c" : "#059669"), fontSize: 10 }}>Risk: {sec.techRisk}</span>
               </div>
               <button onClick={e => { e.stopPropagation(); setExpanded(exp ? null : sec.id); }}
-                style={{ background: "none", border: "none", color: a.color, fontSize: 11, cursor: "pointer", fontWeight: 600, padding: 0, textAlign: "left" }}>
-                {exp ? "Hide Intelligence Card" : "View Intelligence Card"}
+                style={{ background: "none", border: "none", color: a.color, fontSize: 11, cursor: "pointer", fontWeight: 700, padding: 0 }}>
+                {exp ? "▲ Hide SID" : "▼ View SID"}
               </button>
               {exp && (
-                <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid #f1f5f9", fontSize: 11, color: "#64748b", lineHeight: 1.6 }}>
-                  <div>Govt Priority: {sec.govtPriority}/10 · Faculty: {sec.faculty}</div>
-                  <div style={{ marginTop: 4, fontWeight: 500, color: "#b45309" }}>⚠ {sec.constraint}</div>
+                <div style={{ marginTop: 8, background: "#f8fafc", borderRadius: 8, padding: "10px 12px", fontSize: 11, lineHeight: 1.7 }}>
+                  <div><b>Faculty:</b> {sec.faculty} availability</div>
+                  <div><b>Affordability:</b> {sec.affordability}</div>
+                  <div><b>Placement:</b> {sec.placement} complexity</div>
+                  <div><b>Rarity:</b> {sec.rarity}</div>
+                  <div style={{ marginTop: 6, color: "#c2410c", fontWeight: 600, fontSize: 11 }}>⚠ {sec.constraint}</div>
                 </div>
               )}
             </div>
@@ -622,7 +619,7 @@ function SectorStep({ archetype, onNext, onBack }) {
       </div>
 
       <div style={{ display: "flex", justifyContent: "space-between" }}>
-        <button onClick={onBack} style={btn("#64748b", true)}>← Previous</button>
+        <button onClick={onBack} style={btn("#94a3b8", true)}>← Back</button>
         <button onClick={() => selected.length > 0 && onNext({ sectors: selected })}
           style={{ ...btn(a.color), opacity: selected.length > 0 ? 1 : 0.4 }}>
           Next: Funding & Delivery →
@@ -632,91 +629,88 @@ function SectorStep({ archetype, onNext, onBack }) {
   );
 }
 
+// ════════════════════════════════════════════════════════════════
+//  STEP 3: FUNDING + DELIVERY
+// ════════════════════════════════════════════════════════════════
+
 function FundingStep({ archetype, sectors, onNext, onBack }) {
   const [funding, setFunding] = useState(null);
   const [delivery, setDelivery] = useState(null);
   const a = ARCHETYPES.find(x => x.id === archetype);
 
   return (
-    <div style={{ maxWidth: 1000, margin: "0 auto", padding: "32px 20px" }}>
+    <div style={{ maxWidth: 940, margin: "0 auto", padding: "28px 20px" }}>
       <StepIndicator current={3} />
-      <div style={{ marginBottom: 32, textAlign: "center" }}>
-        <h2 style={{ fontWeight: 700, fontSize: 28, color: "#0f172a", marginBottom: 8 }}>Operational Context</h2>
-        <p style={{ color: "#64748b", fontSize: 14 }}>Select your primary capital source and instructional delivery framework.</p>
+      <div style={{ marginBottom: 20 }}>
+        <h2 style={{ fontFamily: "'Syne',sans-serif", fontWeight: 800, fontSize: 26, color: "#0f172a", marginBottom: 4 }}>Funding Source & Delivery Mode</h2>
+        <p style={{ color: "#64748b", fontSize: 14 }}>Your funding brings expectations. Your delivery mode affects sector compatibility and student outcomes.</p>
       </div>
 
-      <div style={{ marginBottom: 40 }}>
-        <div style={{ fontSize: 11, fontWeight: 700, color: "#64748b", marginBottom: 12, textTransform: "uppercase" }}>Capital Allocation</div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 12 }}>
-          {FUNDING_SOURCES.map(f => (
-            <div key={f.id} onClick={() => setFunding(f.id)} style={{ ...card(a.color, funding === f.id), cursor: "pointer" }}>
-              <div style={{ display: "flex", gap: 12, alignItems: "flex-start", marginBottom: 8 }}>
-                <span style={{ fontSize: 20 }}>{f.icon}</span>
-                <div style={{ fontWeight: 600, fontSize: 14, color: "#0f172a" }}>{f.label}</div>
-              </div>
-              <p style={{ fontSize: 12, color: "#64748b", lineHeight: 1.5, marginBottom: 12, flexGrow: 1 }}>{f.desc}</p>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <span style={{ fontSize: 10, color: a.color, fontWeight: 600 }}>Budget Mult: {f.budgetMult}x</span>
-                <span style={pill("#94a3b8")}>Patience: {f.patience}/5</span>
+      <h3 style={{ fontFamily: "'Syne',sans-serif", fontWeight: 700, fontSize: 16, color: "#0f172a", marginBottom: 10 }}>Funding Source</h3>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(230px, 1fr))", gap: 10, marginBottom: 24 }}>
+        {FUNDING_SOURCES.map(f => (
+          <div key={f.id} onClick={() => setFunding(f.id)} style={{ ...card(a.color, a.glow, funding === f.id), cursor: "pointer" }}>
+            <div style={{ fontSize: 24, marginBottom: 4 }}>{f.icon}</div>
+            <div style={{ fontFamily: "'Syne',sans-serif", fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 3 }}>{f.label}</div>
+            <p style={{ fontSize: 11, color: "#64748b", lineHeight: 1.5, marginBottom: 6 }}>{f.desc}</p>
+            <div style={{ fontSize: 11, color: a.color, fontWeight: 600 }}>Budget: {f.budgetMult >= 1 ? "+" : ""}{Math.round((f.budgetMult - 1) * 100)}%</div>
+            <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 3 }}>⚡ {f.expectation}</div>
+          </div>
+        ))}
+      </div>
+
+      <h3 style={{ fontFamily: "'Syne',sans-serif", fontWeight: 700, fontSize: 16, color: "#0f172a", marginBottom: 10 }}>Delivery Mode</h3>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(210px, 1fr))", gap: 10, marginBottom: 24 }}>
+        {DELIVERY_MODES.map(d => {
+          const compatible = d.bestFor.some(s => sectors.includes(s));
+          return (
+            <div key={d.id} onClick={() => setDelivery(d.id)} style={{ ...card(a.color, a.glow, delivery === d.id), cursor: "pointer" }}>
+              <div style={{ fontSize: 22, marginBottom: 4 }}>{d.icon}</div>
+              <div style={{ fontFamily: "'Syne',sans-serif", fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 5 }}>{d.label}</div>
+              <span style={{ ...pill(compatible ? "#059669" : "#dc2626"), fontSize: 10 }}>{compatible ? "✓ Sector compatible" : "⚠ Low compatibility"}</span>
+              <div style={{ marginTop: 6, fontSize: 11, color: "#94a3b8", lineHeight: 1.6 }}>
+                <div>CapEx need: {d.capexMult >= 1.2 ? "High" : d.capexMult <= 0.6 ? "Low" : "Medium"}</div>
+                <div>Satisfaction: {d.satisfactionBonus > 0 ? "+" : ""}{d.satisfactionBonus}</div>
               </div>
             </div>
-          ))}
-        </div>
-      </div>
-
-      <div style={{ marginBottom: 40 }}>
-        <div style={{ fontSize: 11, fontWeight: 700, color: "#64748b", marginBottom: 12, textTransform: "uppercase" }}>Instructional Design</div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12 }}>
-          {DELIVERY_MODES.map(d => {
-            const compatible = d.bestFor.some(s => sectors.includes(s));
-            return (
-              <div key={d.id} onClick={() => setDelivery(d.id)} style={{ ...card(a.color, delivery === d.id), cursor: "pointer" }}>
-                <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 10 }}>
-                  <span>{d.icon}</span>
-                  <div style={{ fontWeight: 600, fontSize: 14 }}>{d.label}</div>
-                </div>
-                <div style={{ marginBottom: 12 }}>
-                  <span style={pill(compatible ? "#059669" : "#dc2626")}>{compatible ? "Optimum Compatibility" : "High Overhead Risk"}</span>
-                </div>
-                <div style={{ fontSize: 11, color: "#64748b", fontFamily: design.fontMono }}>CapEx Weight: {d.capexMult}x</div>
-              </div>
-            );
-          })}
-        </div>
+          );
+        })}
       </div>
 
       <div style={{ display: "flex", justifyContent: "space-between" }}>
-        <button onClick={onBack} style={btn("#64748b", true)}>← Previous</button>
+        <button onClick={onBack} style={btn("#94a3b8", true)}>← Back</button>
         <button onClick={() => funding && delivery && onNext({ fundingSource: funding, deliveryMode: delivery })}
           style={{ ...btn(a.color), opacity: funding && delivery ? 1 : 0.4 }}>
-          Next: Performance Metrics →
+          Next: Select KPIs →
         </button>
       </div>
     </div>
   );
 }
 
+// ════════════════════════════════════════════════════════════════
+//  STEP 4: KPI SELECTION (10 of 13+)
+// ════════════════════════════════════════════════════════════════
+
 function KPIStep({ archetype, sectors, fundingSource, onNext, onBack }) {
   const a = ARCHETYPES.find(x => x.id === archetype);
   const funder = FUNDING_SOURCES.find(f => f.id === fundingSource);
-  
-  const [pool] = useState(() => {
-    const p = [...a.kpiPool];
-    if (funder?.kpiBonus) {
-      Object.keys(funder.kpiBonus).forEach(k => {
-        if (!p.find(kp => kp.id === k)) {
-          const found = ARCHETYPES.flatMap(x => x.kpiPool).find(kp => kp.id === k);
-          if (found) p.push({ ...found, tag: funder.label });
-        }
-      });
-    }
-    sectors.forEach(sid => {
-      const sec = SECTORS.find(s => s.id === sid);
-      if (sec?.salaryMult > 1.1 && !p.find(kp => kp.id === "avg_salary")) {
-        p.push({ id: "avg_salary", label: "Avg Starting Salary (LPA)", base: 3.5, unit: "L", tag: sec.label });
+
+  // Build pool: 13 from archetype + relevant ones from other archetypes based on sector/funding
+  const pool = [...a.kpiPool];
+  if (funder?.kpiBonus) {
+    Object.keys(funder.kpiBonus).forEach(k => {
+      if (!pool.find(kp => kp.id === k)) {
+        const found = ARCHETYPES.flatMap(x => x.kpiPool).find(kp => kp.id === k);
+        if (found) pool.push({ ...found, tag: funder.label });
       }
     });
-    return p;
+  }
+  sectors.forEach(sid => {
+    const sec = SECTORS.find(s => s.id === sid);
+    if (sec?.salaryMult > 1.1 && !pool.find(kp => kp.id === "avg_salary")) {
+      pool.push({ id: "avg_salary", label: "Avg Starting Salary (LPA)", base: 3.5, unit: "L", tag: sec.label });
+    }
   });
 
   const [selected, setSelected] = useState([]);
@@ -727,36 +721,39 @@ function KPIStep({ archetype, sectors, fundingSource, onNext, onBack }) {
   };
 
   return (
-    <div style={{ maxWidth: 1000, margin: "0 auto", padding: "32px 20px" }}>
+    <div style={{ maxWidth: 940, margin: "0 auto", padding: "28px 20px" }}>
       <StepIndicator current={4} />
-      <div style={{ marginBottom: 32, textAlign: "center" }}>
-        <h2 style={{ fontWeight: 700, fontSize: 28, color: "#0f172a", marginBottom: 8 }}>Performance Framework</h2>
-        <p style={{ color: "#64748b", fontSize: 14 }}>Select exactly 10 metrics. These define your institutional scorecard for the next 5 years.</p>
-        <div style={{ marginTop: 12 }}>
-          <span style={pill(selected.length === 10 ? "#059669" : a.color)}>
-            Selected: {selected.length} / 10
+      <div style={{ marginBottom: 16 }}>
+        <h2 style={{ fontFamily: "'Syne',sans-serif", fontWeight: 800, fontSize: 26, color: "#0f172a", marginBottom: 4 }}>Select 10 KPIs to Track</h2>
+        <p style={{ color: "#64748b", fontSize: 14 }}>
+          {pool.length} KPIs available (13 from your archetype + extras from sector & funding). Pick exactly 10 — these define your success.
+        </p>
+        <div style={{ marginTop: 8 }}>
+          <span style={{ ...pill(selected.length === 10 ? "#059669" : a.color), padding: "4px 12px" }}>
+            {selected.length}/10 selected {selected.length === 10 ? "✓ Ready" : ""}
           </span>
         </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 10, marginBottom: 32 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 9, marginBottom: 22 }}>
         {pool.map(kpi => {
           const isSel = selected.includes(kpi.id);
           const disabled = !isSel && selected.length === 10;
           return (
             <div key={kpi.id} onClick={() => !disabled && toggle(kpi.id)} style={{
-              ...card(a.color, isSel),
+              ...card(a.color, a.glow, isSel),
               cursor: disabled ? "not-allowed" : "pointer",
-              opacity: disabled ? 0.5 : 1,
-              padding: "16px",
+              opacity: disabled ? 0.45 : 1,
+              padding: "12px 14px",
             }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                 <div>
-                  <div style={{ fontWeight: 600, fontSize: 13, color: isSel ? a.color : "#1e293b", marginBottom: 4 }}>{kpi.label}</div>
-                  <div style={{ fontSize: 10, color: "#94a3b8", fontFamily: design.fontMono }}>Baseline: {kpi.base}{kpi.unit}</div>
-                  {kpi.tag && <div style={{ ...pill("#9333ea"), fontSize: 8, marginTop: 4 }}>{kpi.tag} context</div>}
+                  <div style={{ fontFamily: "'Syne',sans-serif", fontWeight: 700, fontSize: 12, color: isSel ? a.color : "#0f172a", marginBottom: 2 }}>{kpi.label}</div>
+                  <div style={{ fontSize: 10, color: "#94a3b8", fontFamily: "'DM Mono',monospace" }}>Start: {kpi.base}{kpi.unit}</div>
+                  {kpi.inverse && <span style={{ ...pill("#dc2626"), fontSize: 9, marginTop: 2 }}>↓ lower = better</span>}
+                  {kpi.tag && <span style={{ ...pill("#d97706"), fontSize: 9, marginTop: 2, marginLeft: 2 }}>{kpi.tag}</span>}
                 </div>
-                {isSel && <div style={{ width: 16, height: 16, borderRadius: 99, background: a.color, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9 }}>✓</div>}
+                {isSel && <span style={{ color: a.color, fontSize: 16 }}>✓</span>}
               </div>
             </div>
           );
@@ -764,18 +761,22 @@ function KPIStep({ archetype, sectors, fundingSource, onNext, onBack }) {
       </div>
 
       <div style={{ display: "flex", justifyContent: "space-between" }}>
-        <button onClick={onBack} style={btn("#64748b", true)}>← Previous</button>
+        <button onClick={onBack} style={btn("#94a3b8", true)}>← Back</button>
         <button onClick={() => selected.length === 10 && onNext({ selectedKPIs: selected, kpiPool: pool })}
           style={{ ...btn(a.color), opacity: selected.length === 10 ? 1 : 0.4 }}>
-          Initialize Dashboard →
+          Start Simulation →
         </button>
       </div>
     </div>
   );
 }
 
+// ════════════════════════════════════════════════════════════════
+//  YEAR PLAY SCREEN
+// ════════════════════════════════════════════════════════════════
+
 function YearPlay({ gameState, onSubmit }) {
-  const { year, archetype, sectors, stress, budget, kpis, kpiPool, selectedKPIs } = gameState;
+  const { year, archetype, sectors, fundingSource, deliveryMode, kpis, budget, stress, kpiPool, selectedKPIs } = gameState;
   const a = ARCHETYPES.find(x => x.id === archetype);
   const event = YEAR_EVENTS.find(e => e.year === year);
 
@@ -784,117 +785,125 @@ function YearPlay({ gameState, onSubmit }) {
     PARAMS.forEach(p => { init[p.id] = 10; });
     return init;
   });
-  
   const [preview, setPreview] = useState(null);
+
   const total = Object.values(params).reduce((s, v) => s + v, 0);
   const rem = 100 - total;
 
   const runPreview = () => {
-    setPreview(simulateYear({ ...gameState, params }));
+    setPreview(simulateYear({ kpis, params, archetype, sectors, fundingSource, deliveryMode, year, stress }));
   };
 
   return (
-    <div style={{ maxWidth: 1100, margin: "0 auto", padding: "24px 20px" }}>
-      {/* Formal Dashboard Header */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 24, flexWrap: "wrap", gap: 16, borderBottom: "1px solid #e2e8f0", paddingBottom: "20px" }}>
+    <div style={{ maxWidth: 980, margin: "0 auto", padding: "24px 20px" }}>
+      {/* Year header */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18, flexWrap: "wrap", gap: 10 }}>
         <div>
-          <div style={{ display: "flex", gap: 6, marginBottom: 8, flexWrap: "wrap" }}>
-            <span style={pill(a.color)}>{a.label}</span>
-            <span style={pill("#475569")}>Fiscal Year {year}</span>
-            <span style={pill(stress > 7 ? "#dc2626" : "#059669")}>Operational Stress: {stress.toFixed(1)}</span>
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 5 }}>
+            <span style={pill(a.color)}>{a.icon} {a.label}</span>
+            <span style={pill("#2563eb")}>Year {year} / 5</span>
+            <span style={pill(stress > 7 ? "#dc2626" : stress > 4 ? "#d97706" : "#059669")}>Stress {stress.toFixed(1)}/10</span>
+            {sectors.length > 1 && <span style={pill("#7c3aed")}>Focus: {sectors.length === 2 ? "85%" : "70%"}</span>}
           </div>
-          <h2 style={{ fontWeight: 700, fontSize: 24, color: "#0f172a" }}>Budgetary Allocation</h2>
+          <h2 style={{ fontFamily: "'Syne',sans-serif", fontWeight: 800, fontSize: 22, color: "#0f172a" }}>Year {year} — Budget Allocation</h2>
         </div>
-        <div style={{ background: "#f8fafc", border: design.border, borderRadius: "6px", padding: "12px 24px", textAlign: "right" }}>
-          <div style={{ fontSize: 10, color: "#64748b", fontWeight: 700, marginBottom: 4, textTransform: "uppercase" }}>Available Liquidity</div>
-          <div style={{ fontFamily: design.fontMono, fontWeight: 700, fontSize: 28, color: "#0f172a" }}>₹{budget.toFixed(2)} Cr</div>
+        <div style={{ background: "rgba(255,255,255,0.9)", border: "1.5px solid #bfdbfe", borderRadius: 12, padding: "10px 20px", textAlign: "center" }}>
+          <div style={{ fontSize: 10, color: "#94a3b8", fontFamily: "'DM Mono',monospace", marginBottom: 1 }}>BUDGET POOL</div>
+          <div style={{ fontFamily: "'Syne',sans-serif", fontWeight: 800, fontSize: 24, color: "#0f172a" }}>₹{Math.round(budget)} Cr</div>
         </div>
       </div>
 
-      {/* Intelligence Bulletin */}
-      <div style={{ background: "#fff", border: "1px solid #fcd34d", borderLeft: "4px solid #f59e0b", borderRadius: "6px", padding: "16px", marginBottom: 24 }}>
-        <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
-          <span style={{ fontSize: 20 }}>📡</span>
+      {/* Event banner */}
+      <div style={{ background: "linear-gradient(135deg, #fff7ed, #fef3c7)", border: "1.5px solid #fcd34d", borderRadius: 12, padding: "12px 16px", marginBottom: 18 }}>
+        <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+          <span style={{ fontSize: 18 }}>⚡</span>
           <div>
-            <div style={{ fontWeight: 700, fontSize: 13, color: "#92400e", marginBottom: 4, textTransform: "uppercase" }}>{event.name}</div>
-            <p style={{ fontSize: 13, color: "#78350f", lineHeight: 1.5, margin: 0 }}>{event.desc}</p>
+            <div style={{ fontFamily: "'Syne',sans-serif", fontWeight: 700, fontSize: 13, color: "#92400e" }}>{event.name}</div>
+            <p style={{ fontSize: 12, color: "#78350f", margin: "3px 0 0", lineHeight: 1.5 }}>{event.desc}</p>
           </div>
         </div>
       </div>
 
-      <div className="responsive-dashboard-grid">
-        {/* Metric Overview */}
-        <div style={card()}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: "#64748b", marginBottom: 16, textTransform: "uppercase" }}>Real-time Scorecard</div>
-          <div style={{ overflowY: "auto", maxHeight: "500px", paddingRight: "8px" }}>
-            {selectedKPIs.map(kpiId => {
-              const kpiDef = kpiPool.find(k => k.id === kpiId);
-              if (!kpiDef) return null;
-              return <KPIBar key={kpiId} label={kpiDef.label} value={kpis[kpiId]} color={a.color} inverse={kpiDef.inverse} />;
-            })}
-          </div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1.1fr", gap: 16, marginBottom: 16 }}>
+        {/* KPI Status */}
+        <div style={{ ...card(a.color, a.glow), overflowY: "auto", maxHeight: 440 }}>
+          <div style={{ fontFamily: "'Syne',sans-serif", fontWeight: 700, fontSize: 14, color: "#0f172a", marginBottom: 12 }}>Current KPI Status</div>
+          {selectedKPIs.map(kpiId => {
+            const kpiDef = kpiPool.find(k => k.id === kpiId);
+            if (!kpiDef) return null;
+            const val = kpis[kpiId] ?? kpiDef.base;
+            return <KPIBar key={kpiId} label={kpiDef.label} value={val} color={a.color} inverse={kpiDef.inverse} />;
+          })}
         </div>
 
-        {/* Resource Management */}
-        <div style={card()}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: "#64748b", textTransform: "uppercase" }}>Strategic Controls</div>
-            <span style={pill(Math.abs(rem) < 1 ? "#059669" : "#dc2626")}>
-              {total} / 100 Utilization
+        {/* Sliders */}
+        <div style={{ ...card("#2563eb", "rgba(37,99,235,0.08)"), overflowY: "auto", maxHeight: 440 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+            <div style={{ fontFamily: "'Syne',sans-serif", fontWeight: 700, fontSize: 14, color: "#0f172a" }}>Allocate Budget</div>
+            <span style={{ ...pill(Math.abs(rem) < 2 ? "#059669" : "#dc2626"), fontSize: 10 }}>
+              {total}/100 units
             </span>
           </div>
-          <div style={{ overflowY: "auto", maxHeight: "500px", paddingRight: "8px" }}>
-            {PARAMS.map(p => (
-              <div key={p.id} style={{ marginBottom: 16, paddingBottom: 16, borderBottom: "1px solid #f8fafc" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-                  <span style={{ fontWeight: 600, fontSize: 13, color: "#1e293b" }}>{p.icon} {p.label}</span>
-                  <span style={{ fontFamily: design.fontMono, color: design.primary, fontWeight: 700 }}>{params[p.id]}%</span>
-                </div>
-                <input type="range" min={0} max={40} value={params[p.id]}
-                  onChange={e => setParams(prev => ({ ...prev, [p.id]: Number(e.target.value) }))}
-                  style={{ width: "100%", accentColor: a.color, cursor: "pointer", height: "4px" }} />
-                <div style={{ fontSize: 10, color: "#94a3b8", marginTop: 6, lineHeight: 1.4 }}>{p.desc}</div>
+          {PARAMS.map(p => (
+            <div key={p.id} style={{ marginBottom: 11 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 2 }}>
+                <span style={{ fontWeight: 600, color: "#0f172a" }}>{p.icon} {p.label}</span>
+                <span style={{ fontFamily: "'DM Mono',monospace", color: "#2563eb", fontSize: 11 }}>{params[p.id]}%</span>
               </div>
-            ))}
-          </div>
-          <div style={{ marginTop: 20, textAlign: "center" }}>
-            <button onClick={runPreview} style={btn("#64748b", true)}>Simulation Preview</button>
+              <input type="range" min={0} max={40} value={params[p.id]}
+                onChange={e => setParams(prev => ({ ...prev, [p.id]: Number(e.target.value) }))}
+                style={{ width: "100%", accentColor: a.color, cursor: "pointer", height: 4 }} />
+              <div style={{ fontSize: 10, color: "#94a3b8", lineHeight: 1.3 }}>{p.desc}</div>
+            </div>
+          ))}
+          <div style={{ marginTop: 10, textAlign: "center" }}>
+            <button onClick={runPreview} style={{ ...btn(a.color, true), fontSize: 12, padding: "7px 18px" }}>Preview Impact →</button>
           </div>
         </div>
       </div>
 
-      {/* Analytics Preview */}
+      {/* Preview */}
       {preview && (
-        <div style={{ ...card(a.color), marginTop: 24, background: "#f8fafc" }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: "#64748b", marginBottom: 16, textTransform: "uppercase" }}>Forecasted Impact</div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 8 }}>
+        <div style={{ ...card(a.color, a.glow), marginBottom: 16 }}>
+          <div style={{ fontFamily: "'Syne',sans-serif", fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 10 }}>📊 Projected Outcome — Year {year}</div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: 8 }}>
             {selectedKPIs.slice(0, 8).map(kpiId => {
               const kpiDef = kpiPool.find(k => k.id === kpiId);
-              const before = kpis[kpiId];
-              const after = preview.newKpis[kpiId];
+              if (!kpiDef) return null;
+              const before = kpis[kpiId] ?? kpiDef.base;
+              const after = preview.newKpis[kpiId] ?? before;
               const diff = after - before;
-              const good = kpiDef?.inverse ? diff < 0 : diff > 0;
+              const good = kpiDef.inverse ? diff < 0 : diff > 0;
               return (
-                <div key={kpiId} style={{ background: "#fff", border: design.border, borderRadius: "4px", padding: "10px" }}>
-                  <div style={{ fontSize: 9, color: "#94a3b8", marginBottom: 4, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{kpiDef?.label}</div>
-                  <div style={{ fontFamily: design.fontMono, fontWeight: 700, fontSize: 14, color: good ? "#059669" : "#dc2626" }}>
-                    {after.toFixed(1)} <span style={{ fontSize: 10 }}>{good ? "↑" : "↓"}</span>
+                <div key={kpiId} style={{ background: good ? "#f0fdf4" : "#fef2f2", borderRadius: 9, padding: "9px 11px", border: `1px solid ${good ? "#bbf7d0" : "#fecaca"}` }}>
+                  <div style={{ fontSize: 10, color: "#94a3b8", marginBottom: 2 }}>{kpiDef.label}</div>
+                  <div style={{ fontFamily: "'Syne',sans-serif", fontWeight: 700, fontSize: 15, color: good ? "#059669" : "#dc2626" }}>
+                    {after.toFixed(1)} <span style={{ fontSize: 11 }}>{good ? "▲" : "▼"}{Math.abs(diff).toFixed(1)}</span>
                   </div>
                 </div>
               );
             })}
           </div>
+          <div style={{ marginTop: 8, fontSize: 12, color: "#64748b" }}>
+            Next budget: <b style={{ color: a.color }}>₹{preview.nextBudget.toFixed(1)} Cr</b> &nbsp;·&nbsp;
+            Score: <b>{preview.yearScore}% KPIs up</b> &nbsp;·&nbsp;
+            Stress: <b style={{ color: preview.newStress > 7 ? "#dc2626" : "#059669" }}>{preview.newStress.toFixed(1)}</b>
+          </div>
         </div>
       )}
 
-      <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 32 }}>
-        <button onClick={() => onSubmit(params)} style={{ ...btn(a.color), padding: "12px 48px", fontSize: 14, borderRadius: 8 }}>
-          Commit Strategy for Year {year}
+      <div style={{ display: "flex", justifyContent: "flex-end" }}>
+        <button onClick={() => onSubmit(params)} style={{ ...btn(a.color), padding: "12px 32px", fontSize: 15 }}>
+          Simulate Year {year} →
         </button>
       </div>
     </div>
   );
 }
+
+// ════════════════════════════════════════════════════════════════
+//  YEAR RESULT SCREEN
+// ════════════════════════════════════════════════════════════════
 
 function YearResult({ year, result, kpisBefore, gameState, onNext }) {
   const a = ARCHETYPES.find(x => x.id === gameState.archetype);
@@ -902,142 +911,180 @@ function YearResult({ year, result, kpisBefore, gameState, onNext }) {
   const scoreColor = yearScore >= 70 ? "#059669" : yearScore >= 40 ? "#d97706" : "#dc2626";
 
   return (
-    <div style={{ maxWidth: 1000, margin: "0 auto", padding: "32px 20px" }}>
-      <div style={{ marginBottom: 24 }}>
-        <span style={pill(a.color)}>Fiscal Year {year} Performance Review</span>
-        <h2 style={{ fontWeight: 700, fontSize: 32, color: "#0f172a", marginTop: 12 }}>
-          {yearScore >= 70 ? "Above Target" : yearScore >= 40 ? "On Target" : "Below Target"}
+    <div style={{ maxWidth: 900, margin: "0 auto", padding: "28px 20px" }}>
+      <div style={{ marginBottom: 18 }}>
+        <span style={pill(a.color)}>Year {year} — Outcome Report</span>
+        <h2 style={{ fontFamily: "'Syne',sans-serif", fontWeight: 800, fontSize: 26, color: "#0f172a", marginTop: 6 }}>
+          {yearScore >= 70 ? "Strong Year 💪" : yearScore >= 40 ? "Steady Progress 📊" : "Difficult Year ⚠️"}
         </h2>
       </div>
 
-      <div className="responsive-result-grid" style={{ marginBottom: 32 }}>
-        <div style={{ ...card(scoreColor), textAlign: "center", justifyContent: "center" }}>
-          <div style={{ fontFamily: design.fontMono, fontWeight: 800, fontSize: 56, color: scoreColor }}>{yearScore}%</div>
-          <div style={{ fontSize: 12, color: "#64748b", fontWeight: 600, textTransform: "uppercase" }}>Performance Index</div>
+      {/* Score banner */}
+      <div style={{ ...card(a.color, a.glow), textAlign: "center", padding: "22px", marginBottom: 18 }}>
+        <div style={{ fontFamily: "'Syne',sans-serif", fontWeight: 800, fontSize: 52, color: scoreColor }}>{yearScore}%</div>
+        <div style={{ color: "#64748b", fontSize: 14, marginBottom: 12 }}>KPIs improved this year ({result.improved}/{result.total})</div>
+        <div style={{ display: "flex", gap: 20, justifyContent: "center", flexWrap: "wrap", fontSize: 13 }}>
+          <div>Budget next year: <b style={{ color: a.color }}>₹{nextBudget.toFixed(1)} Cr</b></div>
+          <div>Stress: <b style={{ color: newStress > 7 ? "#dc2626" : "#059669" }}>{newStress.toFixed(1)}/10</b></div>
         </div>
-        
-        <div style={card()}>
-          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            <div style={{ display: "flex", justifyContent: "space-between" }}>
-              <span style={{ color: "#64748b", fontSize: 13 }}>Next Cycle Appropriation</span>
-              <span style={{ fontFamily: design.fontMono, fontWeight: 700 }}>₹{nextBudget.toFixed(2)} Cr</span>
-            </div>
-            <div style={{ display: "flex", justifyContent: "space-between" }}>
-              <span style={{ color: "#64748b", fontSize: 13 }}>Operational Friction</span>
-              <span style={{ fontFamily: design.fontMono, fontWeight: 700, color: newStress > 7 ? "#dc2626" : "#059669" }}>{newStress.toFixed(1)}</span>
-            </div>
-          </div>
-        </div>
+        {newStress > 7 && <div style={{ marginTop: 10, color: "#dc2626", fontSize: 13, fontWeight: 600 }}>⚠ High stress is penalising KPIs. Invest more in trainers next year.</div>}
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12, marginBottom: 40 }}>
+      {/* KPI grid */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(190px, 1fr))", gap: 9, marginBottom: 20 }}>
         {gameState.selectedKPIs.map(kpiId => {
           const kpiDef = gameState.kpiPool.find(k => k.id === kpiId);
-          const after = newKpis[kpiId];
-          const diff = after - (kpisBefore[kpiId] || 0);
-          const good = kpiDef?.inverse ? diff < 0 : diff > 0;
+          if (!kpiDef) return null;
+          const before = kpisBefore[kpiId] ?? kpiDef.base;
+          const after = newKpis[kpiId] ?? before;
+          const diff = after - before;
+          const good = kpiDef.inverse ? diff < 0 : diff > 0;
+          const note = result.narratives?.[kpiId] || (good ? "Improving steadily." : "Needs more attention.");
           return (
-            <div key={kpiId} style={{ ...card(), padding: "16px" }}>
-              <div style={{ fontSize: 10, color: "#94a3b8", fontWeight: 700, marginBottom: 8, textTransform: "uppercase" }}>{kpiDef?.label}</div>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
-                <span style={{ fontFamily: design.fontMono, fontWeight: 700, fontSize: 18, color: good ? "#059669" : "#dc2626" }}>{after.toFixed(1)}</span>
-                <span style={{ fontSize: 11, color: good ? "#059669" : "#dc2626", fontWeight: 600 }}>{good ? "▲" : "▼"} {Math.abs(diff).toFixed(1)}</span>
+            <div key={kpiId} style={{ background: good ? "#f0fdf4" : "#fff8f8", borderRadius: 10, padding: "11px 13px", border: `1.5px solid ${good ? "#bbf7d0" : "#fecaca"}` }}>
+              <div style={{ fontSize: 10, color: "#94a3b8", marginBottom: 2 }}>{kpiDef.label}</div>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 4 }}>
+                <span style={{ fontFamily: "'Syne',sans-serif", fontWeight: 700, fontSize: 17, color: good ? "#059669" : "#dc2626" }}>{after.toFixed(1)}</span>
+                <span style={{ fontSize: 12, color: good ? "#059669" : "#dc2626" }}>{good ? "▲" : "▼"}{Math.abs(diff).toFixed(1)}</span>
               </div>
+              <div style={{ fontSize: 10, color: "#64748b", lineHeight: 1.4 }}>{note}</div>
             </div>
           );
         })}
       </div>
 
       <div style={{ display: "flex", justifyContent: "flex-end" }}>
-        <button onClick={onNext} style={{ ...btn(a.color), padding: "12px 40px" }}>
-          Proceed to Cycle {year < 5 ? year + 1 : "Final Report"} →
+        <button onClick={onNext} style={{ ...btn(a.color), padding: "12px 32px", fontSize: 15 }}>
+          {year < 5 ? `Year ${year + 1} →` : "See Final Results →"}
         </button>
       </div>
     </div>
   );
 }
 
+// ════════════════════════════════════════════════════════════════
+//  FINAL RESULTS SCREEN
+// ════════════════════════════════════════════════════════════════
+
 function FinalResults({ gameState, yearHistory }) {
   const a = ARCHETYPES.find(x => x.id === gameState.archetype);
   const endGoal = a.endGoals.find(g => g.id === gameState.endGoal);
   const finalKPIs = gameState.kpis;
 
+  // End goal achievement
   let goalMet = 0, goalTotal = 0;
   Object.entries(endGoal.kpiTargets).forEach(([kpiId, target]) => {
     goalTotal++;
+    const kpiDef = gameState.kpiPool.find(k => k.id === kpiId);
     const val = finalKPIs[kpiId];
-    if (val !== undefined && (ARCHETYPES.flatMap(x=>x.kpiPool).find(kp=>kp.id===kpiId)?.inverse ? val <= target : val >= target)) goalMet++;
+    if (val !== undefined && (kpiDef?.inverse ? val <= target : val >= target)) goalMet++;
   });
   const goalPct = Math.round((goalMet / goalTotal) * 100);
 
+  // 5-year KPI improvement
   let totalGood = 0, totalKPIs = 0;
   gameState.selectedKPIs.forEach(kpiId => {
     const kpiDef = gameState.kpiPool.find(k => k.id === kpiId);
     if (!kpiDef) return;
     totalKPIs++;
     const start = kpiDef.base;
-    const end = finalKPIs[kpiId] || start;
+    const end = finalKPIs[kpiId] ?? start;
     if (kpiDef.inverse ? end < start : end > start) totalGood++;
   });
   const kpiScore = Math.round((totalGood / totalKPIs) * 100);
+
+  // Stability
   const avgStress = yearHistory.length ? yearHistory.reduce((s, y) => s + (y.stress || 0), 0) / yearHistory.length : 3;
   const stability = Math.round(Math.max(0, 100 - avgStress * 9));
+
   const overall = Math.round(goalPct * 0.4 + kpiScore * 0.35 + stability * 0.25);
   const grade = overall >= 85 ? "S" : overall >= 70 ? "A" : overall >= 55 ? "B" : overall >= 40 ? "C" : "D";
   const gc = { S: "#059669", A: "#2563eb", B: "#d97706", C: "#c2410c", D: "#dc2626" }[grade];
 
+  const insights = [];
+  if (goalPct >= 80) insights.push({ t: "✅", text: `You achieved your end goal "${endGoal.label}" at ${goalPct}%. Exceptional strategic focus maintained over 5 years.` });
+  else if (goalPct < 40) insights.push({ t: "⚠️", text: `End goal "${endGoal.label}" was not met (${goalPct}%). Your operational decisions drifted from your stated vision.` });
+  else insights.push({ t: "📊", text: `Partial goal achievement (${goalPct}%). You made progress but didn't cross all target thresholds.` });
+  if (avgStress > 6) insights.push({ t: "⚠️", text: "Chronically underfunded trainers created compounding stress — a pattern that erodes KPI performance over time. People investment cannot be deferred." });
+  if (kpiScore >= 70) insights.push({ t: "✅", text: `${totalGood}/${totalKPIs} KPIs improved over 5 years — a sign of consistent strategic execution.` });
+  if (gameState.sectors.length === 3) insights.push({ t: "💡", text: "Operating across 3 sectors imposed a 70% focus multiplier throughout. Consider whether narrower focus would have accelerated growth." });
+  insights.push({ t: "💡", text: `As a ${a.label} leader, your natural strength is ${a.pros[0].toLowerCase()}. Your greatest growth opportunity is addressing ${a.cons[0].toLowerCase()}.` });
+  if (grade === "S" || grade === "A") insights.push({ t: "🏆", text: "This simulation suggests you have a balanced strategic mind — you aligned vision, operations, and market reality well over 5 years." });
+
   return (
-    <div style={{ maxWidth: 1000, margin: "0 auto", padding: "40px 20px" }}>
-      <div style={{ textAlign: "center", marginBottom: 40 }}>
-        <div style={{ fontSize: 40, marginBottom: 16 }}>🏛️</div>
-        <h2 style={{ fontWeight: 800, fontSize: 32, color: "#0f172a", marginBottom: 8 }}>Final Institutional Assessment</h2>
-        <p style={{ color: "#64748b", textTransform: "uppercase", fontSize: 11, fontWeight: 700, letterSpacing: "0.05em" }}>5-Year Strategic Review Roadmap</p>
-      </div>
-
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 24, marginBottom: 40 }}>
-        <div style={{ ...card(gc), textAlign: "center", padding: "32px", justifyContent: "center" }}>
-          <div style={{ fontFamily: design.fontMono, fontSize: 80, fontWeight: 800, color: gc, lineHeight: 1 }}>{grade}</div>
-          <div style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", marginTop: 8 }}>Composite Strategy Grade</div>
-        </div>
-
-        <div style={card()}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: "#64748b", textTransform: "uppercase", marginBottom: 20 }}>Metric Breakdown</div>
-          {[
-            { label: "Target Achievement", score: goalPct, color: a.color },
-            { label: "KPI Growth Velocity", score: kpiScore, color: "#2563eb" },
-            { label: "Operational Stability", score: stability, color: "#059669" },
-          ].map(s => (
-            <div key={s.label} style={{ marginBottom: 16 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 6 }}>
-                <span>{s.label}</span>
-                <span style={{ fontWeight: 700, fontFamily: design.fontMono }}>{s.score}%</span>
-              </div>
-              <div style={{ height: 4, background: "#f1f5f9", borderRadius: 2 }}>
-                <div style={{ height: "100%", width: `${s.score}%`, background: s.color, borderRadius: 2 }} />
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div style={{ background: "#0f172a", borderRadius: "8px", padding: "32px", color: "#f1f5f9" }}>
-        <div style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", marginBottom: 20 }}>Board Observations</div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: 20 }}>
-          <div style={{ fontSize: 13, lineHeight: 1.6 }}>
-            Vision alignment was recorded at <span style={{ color: "#fff", fontWeight: 700 }}>{goalPct}%</span>. 
-            The institution navigated the AI disruption cycle with 
-            {stability > 70 ? " high operational maturity." : " moderate structural friction."}
+    <div style={{ maxWidth: 900, margin: "0 auto", padding: "28px 20px" }}>
+      <div style={{ textAlign: "center", marginBottom: 28 }}>
+        <div style={{ fontSize: 54, marginBottom: 8 }}>{grade === "S" ? "🏆" : grade === "A" ? "🥇" : grade === "B" ? "🎖️" : "📊"}</div>
+        <h2 style={{ fontFamily: "'Syne',sans-serif", fontWeight: 800, fontSize: 34, color: "#0f172a", marginBottom: 4 }}>5-Year Final Verdict</h2>
+        <p style={{ color: "#64748b", marginBottom: 18, fontSize: 14 }}>{a.icon} {a.label} · {endGoal.label}</p>
+        <div style={{ display: "inline-flex", gap: 24, background: "rgba(255,255,255,0.95)", border: "2px solid #e2e8f0", borderRadius: 18, padding: "20px 36px", boxShadow: "0 4px 20px rgba(0,0,0,0.06)" }}>
+          <div style={{ textAlign: "center" }}>
+            <div style={{ fontFamily: "'Syne',sans-serif", fontWeight: 800, fontSize: 54, color: gc, lineHeight: 1 }}>{grade}</div>
+            <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 2 }}>Final Grade</div>
           </div>
-          <div style={{ fontSize: 13, lineHeight: 1.6 }}>
-            Sectoral diversification strategy with <span style={{ color: "#fff", fontWeight: 700 }}>{gameState.sectors.length} sectors</span> 
-            resulted in a final composite score of <span style={{ color: "#fff", fontWeight: 700 }}>{overall}/100</span>.
+          <div style={{ borderLeft: "1px solid #e2e8f0", paddingLeft: 24, textAlign: "center" }}>
+            <div style={{ fontFamily: "'Syne',sans-serif", fontWeight: 800, fontSize: 36, color: a.color }}>{overall}</div>
+            <div style={{ fontSize: 11, color: "#94a3b8" }}>/ 100 Score</div>
           </div>
         </div>
       </div>
 
-      <div style={{ textAlign: "center", marginTop: 40 }}>
-        <button onClick={() => window.location.reload()} style={{ ...btn(design.primary), padding: "12px 48px" }}>
-          Re-initialize Simulation Cycle
+      {/* Score breakdown */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 12, marginBottom: 22 }}>
+        {[
+          { label: "End Goal", score: goalPct, sub: `${goalMet}/${goalTotal} targets`, color: a.color },
+          { label: "KPI Progress", score: kpiScore, sub: `${totalGood}/${totalKPIs} improved`, color: "#2563eb" },
+          { label: "Stability", score: stability, sub: `Avg stress: ${avgStress.toFixed(1)}`, color: "#059669" },
+        ].map(s => (
+          <div key={s.label} style={{ ...card(s.color), textAlign: "center", padding: "16px" }}>
+            <div style={{ fontFamily: "'Syne',sans-serif", fontWeight: 800, fontSize: 30, color: s.color }}>{s.score}%</div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "#0f172a", marginBottom: 2 }}>{s.label}</div>
+            <div style={{ fontSize: 11, color: "#94a3b8" }}>{s.sub}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* KPI final comparison */}
+      <div style={{ ...card(a.color, a.glow), marginBottom: 20 }}>
+        <div style={{ fontFamily: "'Syne',sans-serif", fontWeight: 700, fontSize: 15, color: "#0f172a", marginBottom: 12 }}>5-Year KPI Journey: Start → End</div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(195px, 1fr))", gap: 8 }}>
+          {gameState.selectedKPIs.map(kpiId => {
+            const kpiDef = gameState.kpiPool.find(k => k.id === kpiId);
+            if (!kpiDef) return null;
+            const start = kpiDef.base;
+            const end = finalKPIs[kpiId] ?? start;
+            const good = kpiDef.inverse ? end < start : end > start;
+            const targetEntry = endGoal.kpiTargets[kpiId];
+            const metTarget = targetEntry !== undefined ? (kpiDef.inverse ? end <= targetEntry : end >= targetEntry) : null;
+            return (
+              <div key={kpiId} style={{ background: "#f8fafc", borderRadius: 9, padding: "9px 11px" }}>
+                <div style={{ fontSize: 10, color: "#94a3b8", marginBottom: 2 }}>{kpiDef.label}</div>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 3 }}>
+                  <span style={{ fontFamily: "'DM Mono',monospace", fontSize: 11, color: "#cbd5e1" }}>{start}{kpiDef.unit}</span>
+                  <span>→</span>
+                  <span style={{ fontFamily: "'Syne',sans-serif", fontWeight: 700, fontSize: 15, color: good ? a.color : "#dc2626" }}>{end.toFixed(1)}{kpiDef.unit}</span>
+                </div>
+                {metTarget !== null && <span style={{ ...pill(metTarget ? "#059669" : "#dc2626"), fontSize: 9 }}>{metTarget ? "✓ Target Met" : "✗ Missed"}</span>}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Leadership insights */}
+      <div style={{ background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)", borderRadius: 14, padding: "22px 24px", marginBottom: 24 }}>
+        <div style={{ fontFamily: "'Syne',sans-serif", fontWeight: 800, fontSize: 16, color: "#fff", marginBottom: 14 }}>🧠 Leadership Insights</div>
+        {insights.map((ins, i) => (
+          <div key={i} style={{ display: "flex", gap: 10, marginBottom: 10, alignItems: "flex-start" }}>
+            <span style={{ fontSize: 16, flexShrink: 0 }}>{ins.t}</span>
+            <p style={{ fontSize: 13, color: "#cbd5e1", lineHeight: 1.65, margin: 0 }}>{ins.text}</p>
+          </div>
+        ))}
+      </div>
+
+      <div style={{ textAlign: "center" }}>
+        <button onClick={() => window.location.reload()} style={{ ...btn(a.color), padding: "14px 38px", fontSize: 15, borderRadius: 12 }}>
+          🔄 Play Again
         </button>
       </div>
     </div>
@@ -1077,7 +1124,7 @@ export default function InstituteCommand() {
   };
 
   const handleYearSubmit = (params) => {
-    const result = simulateYear({ ...gs, params });
+    const result = simulateYear({ kpis: gs.kpis, params, archetype: gs.archetype, sectors: gs.sectors, fundingSource: gs.fundingSource, deliveryMode: gs.deliveryMode, year: gs.year, stress: gs.stress });
     const kpisBefore = { ...gs.kpis };
     setLastResult({ ...result, kpisBefore, year: gs.year });
     setGs(g => ({ ...g, kpis: result.newKpis, stress: result.newStress, budget: result.nextBudget }));
@@ -1090,55 +1137,29 @@ export default function InstituteCommand() {
     else { setGs(g => ({ ...g, year: g.year + 1 })); setScreen("year"); }
   };
 
+  const bg = "linear-gradient(135deg, #eef2ff 0%, #e0f2fe 25%, #fdf4ff 55%, #fff7ed 100%)";
+
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap');
-        
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        
-        body { 
-          font-family: ${design.font}; 
-          background-color: #fcfcfd; 
-          color: #0f172a; 
-          -webkit-font-smoothing: antialiased;
-        }
-
-        .responsive-dashboard-grid {
-          display: grid;
-          grid-template-columns: 1fr 1.1fr;
-          gap: 20px;
-        }
-
-        .responsive-result-grid {
-          display: grid;
-          grid-template-columns: 240px 1fr;
-          gap: 16px;
-        }
-
-        input[type=range] { -webkit-appearance: none; background: transparent; }
-        input[type=range]:focus { outline: none; }
-        input[type=range]::-webkit-slider-runnable-track { height: 4px; background: #e2e8f0; border-radius: 2px; }
-        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 16px; width: 16px; border-radius: 99px; background: #fff; border: 2px solid ${design.primary}; cursor: pointer; margin-top: -6px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-
-        @media (max-width: 850px) {
-          .responsive-dashboard-grid, .responsive-result-grid { grid-template-columns: 1fr; }
-          .hide-mobile { display: none; }
-        }
-
-        button:active { filter: brightness(0.9); transform: translateY(1px); }
-        button:hover { filter: brightness(1.05); }
+        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap');
+        *{box-sizing:border-box;margin:0;padding:0}
+        input[type=range]{height:4px;cursor:pointer}
+        ::-webkit-scrollbar{width:5px}::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:3px}
+        button:hover{filter:brightness(1.06);transform:translateY(-1px)}
       `}</style>
+      <div style={{ minHeight: "100vh", background: bg, fontFamily: "'DM Sans',sans-serif", color: "#0f172a" }}>
 
-      <div style={{ minHeight: "100vh", position: "relative" }}>
+        {/* Sticky nav */}
         {screen !== "welcome" && (
-          <div style={{ background: "#fff", borderBottom: design.border, padding: "12px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", position: "sticky", top: 0, zIndex: 100 }}>
-            <div style={{ fontWeight: 800, fontSize: 14, color: "#0f172a" }}>
-              🏛️ Institute<span style={{ color: design.primary }}>Command</span>
+          <div style={{ background: "rgba(255,255,255,0.82)", backdropFilter: "blur(10px)", borderBottom: "1px solid #e2e8f0", padding: "10px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", position: "sticky", top: 0, zIndex: 100 }}>
+            <div style={{ fontFamily: "'Syne',sans-serif", fontWeight: 800, fontSize: 16, color: "#0f172a" }}>
+              🏛️ Institute<span style={{ color: "#2563eb" }}>Command</span>
             </div>
-            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-              {gs.archetype && (() => { const a = ARCHETYPES.find(x => x.id === gs.archetype); return a ? <span style={pill(a.color)}>{a.label}</span> : null; })()}
-              {gs.year && <span style={pill("#1e293b")}>Cycle {gs.year}/5</span>}
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+              {gs.archetype && (() => { const a = ARCHETYPES.find(x => x.id === gs.archetype); return a ? <span style={pill(a.color)}>{a.icon} {a.label}</span> : null; })()}
+              {gs.year && <span style={pill("#2563eb")}>Yr {gs.year}/5</span>}
+              {gs.stress !== undefined && <span style={pill(gs.stress > 7 ? "#dc2626" : "#059669")}>Stress {(gs.stress || 0).toFixed(1)}</span>}
             </div>
           </div>
         )}
