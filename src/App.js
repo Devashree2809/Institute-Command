@@ -208,61 +208,269 @@ const PARAMS=[
 ];
 
 // ═══════════════════════════════════════════════════════
-//  SIMULATION ENGINE (UNTOUCHED LOGIC)
+//  CONTEXTUAL EXTRA KPIs  (sector / delivery / funding)
+//  Each entry: id, label, base, unit, inverse?, tag, delta formula hint
+//  Max 2 extras added to any game (1 per source bucket, deduped)
 // ═══════════════════════════════════════════════════════
-function simulateYear({kpis,params,archetype,sectors,fundingSource,deliveryMode,year,stress}){
+const SECTOR_BONUS_KPIS = {
+  manufacturing:[
+    {id:"safety_cert_pct",label:"Safety Certification Rate (%)",base:20,unit:"%",tag:"sector"},
+    {id:"industry_cert_pct",label:"Industry Cert Attainment (%)",base:25,unit:"%",tag:"sector"},
+  ],
+  healthcare:[
+    {id:"clinical_hours",label:"Clinical Hours per Learner",base:40,unit:"h",tag:"sector"},
+    {id:"cert_pass_rate",label:"Certification Pass Rate (%)",base:45,unit:"%",tag:"sector"},
+  ],
+  bfsi:[
+    {id:"compliance_score",label:"Regulatory Compliance Score",base:50,unit:"pts",tag:"sector"},
+    {id:"licencing_pct",label:"BFSI Licencing Pass Rate (%)",base:30,unit:"%",tag:"sector"},
+  ],
+  it:[
+    {id:"tech_cert_pct",label:"Tech Certification Rate (%)",base:20,unit:"%",tag:"sector"},
+    {id:"github_project_pct",label:"Portfolio / Project Completion (%)",base:15,unit:"%",tag:"sector"},
+  ],
+  logistics:[
+    {id:"last_mile_placement",label:"Last-Mile Placement Rate (%)",base:30,unit:"%",tag:"sector"},
+    {id:"vehicle_ops_cert",label:"Vehicle / Ops Certification (%)",base:20,unit:"%",tag:"sector"},
+  ],
+  retail:[
+    {id:"sales_target_hit",label:"Sales Target Achievement (%)",base:35,unit:"%",tag:"sector"},
+    {id:"customer_handling",label:"Customer Handling Score",base:50,unit:"pts",tag:"sector"},
+  ],
+  construction:[
+    {id:"safety_cert_pct",label:"Safety Certification Rate (%)",base:20,unit:"%",tag:"sector"},
+    {id:"site_readiness_pct",label:"Site-Ready Graduates (%)",base:25,unit:"%",tag:"sector"},
+  ],
+  hospitality:[
+    {id:"soft_skills_score",label:"Soft Skills Assessment Score",base:55,unit:"pts",tag:"sector"},
+    {id:"intl_placement_pct",label:"International Placement (%)",base:5,unit:"%",tag:"sector"},
+  ],
+  green:[
+    {id:"green_cert_pct",label:"Green Skills Certification (%)",base:15,unit:"%",tag:"sector"},
+    {id:"solar_project_pct",label:"Renewable Project Completion (%)",base:10,unit:"%",tag:"sector"},
+  ],
+  beauty:[
+    {id:"self_employ_pct",label:"Self-Employment Rate (%)",base:30,unit:"%",tag:"sector"},
+    {id:"client_sat_score",label:"Client Satisfaction Score",base:55,unit:"pts",tag:"sector"},
+  ],
+};
+const DELIVERY_BONUS_KPIS = {
+  classroom:[
+    {id:"classroom_utilisation",label:"Classroom Utilisation (%)",base:50,unit:"%",tag:"delivery"},
+    {id:"attendance_rate",label:"Learner Attendance Rate (%)",base:70,unit:"%",tag:"delivery"},
+  ],
+  handson:[
+    {id:"lab_utilisation",label:"Lab / Workshop Utilisation (%)",base:40,unit:"%",tag:"delivery"},
+    {id:"practical_pass_rate",label:"Practical Assessment Pass Rate (%)",base:45,unit:"%",tag:"delivery"},
+  ],
+  online_async:[
+    {id:"module_completion_pct",label:"Module Completion Rate (%)",base:35,unit:"%",tag:"delivery"},
+    {id:"avg_session_time",label:"Avg Session Time (mins)",base:22,unit:"m",tag:"delivery"},
+  ],
+  online_live:[
+    {id:"live_attendance_pct",label:"Live Session Attendance (%)",base:55,unit:"%",tag:"delivery"},
+    {id:"chat_engagement",label:"Chat / Interaction Score",base:40,unit:"pts",tag:"delivery"},
+  ],
+  hybrid:[
+    {id:"blended_completion",label:"Blended Completion Rate (%)",base:48,unit:"%",tag:"delivery"},
+    {id:"offline_online_balance",label:"Offline-Online Balance Score",base:45,unit:"pts",tag:"delivery"},
+  ],
+  mobile:[
+    {id:"community_reach_pct",label:"Community Reach Rate (%)",base:20,unit:"%",tag:"delivery"},
+    {id:"mobile_completion_pct",label:"Mobile Learner Completion (%)",base:35,unit:"%",tag:"delivery"},
+  ],
+};
+const FUNDING_BONUS_KPIS = {
+  csr:[
+    {id:"csr_outcome_score",label:"CSR Outcome Index Score",base:40,unit:"pts",tag:"funding"},
+    {id:"social_roi",label:"Social ROI Score",base:30,unit:"pts",tag:"funding"},
+  ],
+  govt:[
+    {id:"mpr_compliance",label:"MPR / Compliance Score (%)",base:50,unit:"%",tag:"funding"},
+    {id:"scheme_utilisation",label:"Scheme Fund Utilisation (%)",base:45,unit:"%",tag:"funding"},
+  ],
+  investor:[
+    {id:"unit_economics_score",label:"Unit Economics Score",base:35,unit:"pts",tag:"funding"},
+    {id:"growth_velocity",label:"Revenue Growth Velocity (%)",base:10,unit:"%",tag:"funding"},
+  ],
+  self:[
+    {id:"cash_flow_health",label:"Cash Flow Health Score",base:40,unit:"pts",tag:"funding"},
+    {id:"cost_efficiency",label:"Cost Efficiency Index",base:45,unit:"pts",tag:"funding"},
+  ],
+  philanthropy:[
+    {id:"mission_alignment",label:"Mission Alignment Score",base:50,unit:"pts",tag:"funding"},
+    {id:"impact_reports",label:"Impact Reports Published",base:1,unit:"",tag:"funding"},
+  ],
+};
+
+// ─── delta hints for extra KPIs in simulation ───
+const EXTRA_KPI_DELTAS = {
+  safety_cert_pct:(fF,fI,fT,fO,fS,fOP,fC)=>fF*9+fOP*5,
+  industry_cert_pct:(fF,fI,fT,fO,fS,fOP,fC)=>fF*10+fI*7,
+  clinical_hours:(fF,fI,fT,fO,fS,fOP,fC)=>fF*8+fC*5,
+  cert_pass_rate:(fF,fI,fT,fO,fS,fOP,fC)=>fF*11+fT*5,
+  compliance_score:(fF,fI,fT,fO,fS,fOP,fC)=>fOP*10+fF*6,
+  licencing_pct:(fF,fI,fT,fO,fS,fOP,fC)=>fF*9+fT*6,
+  tech_cert_pct:(fF,fI,fT,fO,fS,fOP,fC)=>fT*10+fF*7,
+  github_project_pct:(fF,fI,fT,fO,fS,fOP,fC)=>fT*9+fF*6,
+  last_mile_placement:(fF,fI,fT,fO,fS,fOP,fC)=>fI*10+fO*6,
+  vehicle_ops_cert:(fF,fI,fT,fO,fS,fOP,fC)=>fF*8+fC*5,
+  sales_target_hit:(fF,fI,fT,fO,fS,fOP,fC)=>fI*11+fF*6,
+  customer_handling:(fF,fI,fT,fO,fS,fOP,fC)=>fF*10+fS*5,
+  site_readiness_pct:(fF,fI,fT,fO,fS,fOP,fC)=>fF*9+fC*6,
+  soft_skills_score:(fF,fI,fT,fO,fS,fOP,fC)=>fF*10+fS*6,
+  intl_placement_pct:(fF,fI,fT,fO,fS,fOP,fC)=>fI*9+fO*4,
+  green_cert_pct:(fF,fI,fT,fO,fS,fOP,fC)=>fF*9+fT*5,
+  solar_project_pct:(fF,fI,fT,fO,fS,fOP,fC)=>fT*8+fC*5,
+  self_employ_pct:(fF,fI,fT,fO,fS,fOP,fC)=>fO*10+fS*7,
+  client_sat_score:(fF,fI,fT,fO,fS,fOP,fC)=>fF*9+fS*6,
+  classroom_utilisation:(fF,fI,fT,fO,fS,fOP,fC)=>fO*9+fC*5,
+  attendance_rate:(fF,fI,fT,fO,fS,fOP,fC)=>fF*8+fS*7,
+  lab_utilisation:(fF,fI,fT,fO,fS,fOP,fC)=>fC*10+fOP*6,
+  practical_pass_rate:(fF,fI,fT,fO,fS,fOP,fC)=>fF*10+fC*5,
+  module_completion_pct:(fF,fI,fT,fO,fS,fOP,fC)=>fT*9+fF*6,
+  avg_session_time:(fF,fI,fT,fO,fS,fOP,fC)=>fT*7+fF*5,
+  live_attendance_pct:(fF,fI,fT,fO,fS,fOP,fC)=>fF*9+fS*5,
+  chat_engagement:(fF,fI,fT,fO,fS,fOP,fC)=>fT*8+fO*4,
+  blended_completion:(fF,fI,fT,fO,fS,fOP,fC)=>fF*9+fT*7,
+  offline_online_balance:(fF,fI,fT,fO,fS,fOP,fC)=>fOP*8+fT*6,
+  community_reach_pct:(fF,fI,fT,fO,fS,fOP,fC)=>fO*11+fS*6,
+  mobile_completion_pct:(fF,fI,fT,fO,fS,fOP,fC)=>fT*8+fF*6,
+  csr_outcome_score:(fF,fI,fT,fO,fS,fOP,fC)=>fOP*9+fI*5,
+  social_roi:(fF,fI,fT,fO,fS,fOP,fC)=>fI*8+fOP*6,
+  mpr_compliance:(fF,fI,fT,fO,fS,fOP,fC)=>fOP*10+fF*5,
+  scheme_utilisation:(fF,fI,fT,fO,fS,fOP,fC)=>fOP*9+fO*5,
+  unit_economics_score:(fF,fI,fT,fO,fS,fOP,fC)=>fOP*10+fT*6,
+  growth_velocity:(fF,fI,fT,fO,fS,fOP,fC)=>fO*9+fI*6,
+  cash_flow_health:(fF,fI,fT,fO,fS,fOP,fC)=>fOP*10+fT*5,
+  cost_efficiency:(fF,fI,fT,fO,fS,fOP,fC)=>fOP*9+fT*6,
+  mission_alignment:(fF,fI,fT,fO,fS,fOP,fC)=>fI*8+fF*6,
+  impact_reports:(fF,fI,fT,fO,fS,fOP,fC)=>fOP*0.6+fI*0.4,
+};
+
+// helper used by controller and blueprint
+function getContextualExtras({sectors, fundingSource, deliveryMode, archetype}){
+  const arch = ARCHETYPES.find(a=>a.id===archetype);
+  const archKpiIds = new Set(arch.kpiPool.map(k=>k.id));
+  const extras = [];
+  const add = (kpi) => {
+    if(!archKpiIds.has(kpi.id) && !extras.find(e=>e.id===kpi.id)) extras.push(kpi);
+  };
+  // 1. sector bonus (primary sector only, first available not in arch pool)
+  const primarySector = sectors[0];
+  const sectorBonuses = SECTOR_BONUS_KPIS[primarySector]||[];
+  for(const k of sectorBonuses){ if(!archKpiIds.has(k.id)){ add(k); break; } }
+  // 2. delivery bonus
+  const deliveryBonuses = DELIVERY_BONUS_KPIS[deliveryMode]||[];
+  for(const k of deliveryBonuses){ if(!archKpiIds.has(k.id) && !extras.find(e=>e.id===k.id)){ add(k); break; } }
+  // 3. funding bonus (only if still < 2)
+  if(extras.length < 2){
+    const fundingBonuses = FUNDING_BONUS_KPIS[fundingSource]||[];
+    for(const k of fundingBonuses){ if(!archKpiIds.has(k.id) && !extras.find(e=>e.id===k.id)){ add(k); break; } }
+  }
+  return extras.slice(0,2); // hard cap at 2
+}
+
+// ═══════════════════════════════════════════════════════
+//  SIMULATION ENGINE  — corrected logic (12 fixes applied)
+//
+//  Formula per KPI per period:
+//    new_kpi = prev_kpi
+//            + (arch_weight × budget_spend_factor)   ← budget allocation impact
+//            × sector_multiplier  (AVERAGED)
+//            × event_modifier     (RANDOMISED)
+//            × delivMult          (delivery compatibility)
+//            × focusMult          (sector focus — growth only)
+//            × stressPenalty      (multi-factor)
+//            − decay              (if key params starved)
+// ═══════════════════════════════════════════════════════
+function simulateYear({kpis,params,archetype,sectors,fundingSource,deliveryMode,year,stress,currentBudget,initialKpis,endGoalTargets}){
   const arch=ARCHETYPES.find(a=>a.id===archetype);
-  const event=YEAR_EVENTS.find(e=>e.year===year)||YEAR_EVENTS[0];
+
+  // FIX 6: Randomise event from year pool
+  const yearPool=YEAR_EVENTS.filter(e=>e.year===year);
+  const event=yearPool.length>0
+    ? yearPool[Math.floor(Math.random()*yearPool.length)]
+    : YEAR_EVENTS[0];
+
   const delivery=DELIVERY_MODES.find(d=>d.id===deliveryMode);
   const total=Object.values(params).reduce((s,v)=>s+v,0)||100;
   const np={};Object.keys(params).forEach(k=>{np[k]=params[k]/total;});
+
+  // FIX 3: Multi-factor stress calculation
   let newStress=stress;
-  if(np.trainer_hire<0.06) newStress=Math.min(10,newStress+2.5);
-  else if(np.trainer_hire>0.15) newStress=Math.max(0,newStress-1.5);
-  else newStress=Math.max(0,newStress-0.5);
-  const stressMult=newStress>7?0.82:newStress>4?0.93:1.0;
+  if(np.trainer_hire<0.06)  newStress+=2;
+  if(np.capex>0.35)         newStress+=1.5;
+  if(np.ops_team<0.05)      newStress+=1;
+  if(np.trainer_dev>0.12)   newStress=Math.max(0,newStress-1);
+  if(np.trainer_hire>0.15)  newStress=Math.max(0,newStress-1.5);
+  newStress=Math.max(0,Math.min(10,newStress));
+  const stressPenalty=newStress>7?0.78:newStress>4?0.91:1.0;
+
+  // FIX 10: focusMult applies to growth only
   const focusMult=sectors.length===1?1.0:sectors.length===2?0.85:0.70;
-  let sectorSalary=1.0,sectorPlacement=1.0;
-  sectors.forEach(sid=>{const s=SECTORS.find(x=>x.id===sid);if(s){sectorSalary+=(s.salaryMult-1);sectorPlacement+=(s.placementMult-1);}});
+
+  // FIX 4: Average sector multipliers (not stacked)
+  const sectorSalary=sectors.reduce((sum,sid)=>{
+    const s=SECTORS.find(x=>x.id===sid); return sum+(s?.salaryMult||1);
+  },0)/sectors.length;
+  const sectorPlacement=sectors.reduce((sum,sid)=>{
+    const s=SECTORS.find(x=>x.id===sid); return sum+(s?.placementMult||1);
+  },0)/sectors.length;
+
   const primary=sectors[0];
   const evtSector=event.sectorMod[primary]||1.0;
   const evtGlobal=event.mod;
+
+  // FIX 9: delivMult computed and applied to all KPI growth
   const compatible=delivery?.bestFor.includes(primary);
-  const delivMult=compatible?1.08:0.88;
+  const delivMult=compatible?1.08:0.92;
+
+  // FIX 5: capexROIPenalty floor at 0.6
   const capexOver=Math.max(0,np.capex-0.30);
-  const capexROIPenalty=1-capexOver*1.2;
-  const fI=np.industry_eng*arch.paramWeights.industry_eng;
+  const capexROIPenalty=Math.max(0.6,1-capexOver*1.2);
+
+  // Budget factor composites: normalised spend × archetype weight
+  const fI=np.industry_eng *arch.paramWeights.industry_eng;
   const fF=(np.trainer_hire*arch.paramWeights.trainer_hire)+(np.trainer_dev*arch.paramWeights.trainer_dev);
-  const fT=np.tech*arch.paramWeights.tech;
+  const fT=np.tech         *arch.paramWeights.tech;
   const fO=(np.mobilization*arch.paramWeights.mobilization)+(np.digital_mkt*arch.paramWeights.digital_mkt);
-  const fS=np.subsidy*arch.paramWeights.subsidy;
-  const fOP=np.ops_team*arch.paramWeights.ops_team;
-  const fC=np.capex*arch.paramWeights.capex;
-  const fM=np.digital_mkt*arch.paramWeights.digital_mkt;
-  const deltas={
-    placement_rate:(fI*14+fF*8+fO*5)*sectorPlacement*focusMult*evtSector*evtGlobal*delivMult*stressMult,
-    retention_12:(fF*11+fS*7+fOP*5)*stressMult,
-    retention_24:(fF*9+fI*6)*stressMult*evtGlobal,
-    soqs:(fF*11+fI*9+fT*4)*sectorSalary*stressMult,
-    employer_repeat:(fI*15+fF*6)*stressMult,
-    employer_sat:(fF*10+fOP*6+fC*4)*stressMult,
+  const fS=np.subsidy      *arch.paramWeights.subsidy;
+  const fOP=np.ops_team    *arch.paramWeights.ops_team;
+  const fC=np.capex        *arch.paramWeights.capex;
+  const fM=np.digital_mkt  *arch.paramWeights.digital_mkt;
+
+  // Raw growth per KPI — budget allocation impact only (sector/event/stress applied below)
+  const rawGrowth={
+    // Employment
+    placement_rate:(fI*14+fF*8+fO*5)*sectorPlacement,
+    retention_12:(fF*11+fS*7+fOP*5),
+    retention_24:(fF*9+fI*6)*evtGlobal,
+    soqs:(fF*11+fI*9+fT*4)*sectorSalary,
+    employer_repeat:(fI*15+fF*6),
+    employer_sat:(fF*10+fOP*6+fC*4),
     job_dropoff:-(fF*7+fS*6),
-    role_alignment:(fF*13+fI*10)*stressMult,
+    role_alignment:(fF*13+fI*10),
     alumni_tracking:(fT*11+fOP*8),
-    job_satisfaction:(fF*9+fS*6+fC*4)*delivMult,
+    job_satisfaction:(fF*9+fS*6+fC*4),
     income_growth_12:(fF*5+fI*5)*sectorSalary,
     active_employers:(fI*12+fO*4),
-    avg_salary:(fF*0.35+fI*0.45)*sectorSalary*evtSector*evtGlobal,
+    avg_salary:(fF*0.4+fI*0.5)*sectorSalary*evtSector,
+    // Inclusion
     total_learners:(fO*600+fS*450+fC*250),
-    women_pct:(fO*7+fS*6),rural_pct:(fO*9+fS*7),firstgen_pct:(fO*8+fS*5),
-    marginalized_pct:(fO*7+fS*8),scholarship_pct:(fS*14),
-    completion_rate:(fF*9+fS*7+fT*5)*delivMult*stressMult,
+    women_pct:(fO*7+fS*6),
+    rural_pct:(fO*9+fS*7),
+    firstgen_pct:(fO*8+fS*5),
+    marginalized_pct:(fO*7+fS*8),
+    scholarship_pct:(fS*14),
+    completion_rate:(fF*9+fS*7+fT*5),
     dropout_rate:-(fS*7+fF*6),
-    student_sat:(fF*9+fS*5+fC*4)*delivMult,
-    marginalized_placement:(fI*9+fO*6)*focusMult,
+    student_sat:(fF*9+fS*5+fC*4),
+    marginalized_placement:(fI*9+fO*6),
     women_income_uplift:(fF*4+fI*5)*sectorSalary,
     local_lang_pct:(fO*11+fS*5),
-    annual_revenue:(fO*3.5+fT*2.5+fI*2.5)*capexROIPenalty*evtGlobal,
+    // Financial
+    annual_revenue:(fO*3.5+fT*2.5+fI*2.5)*capexROIPenalty,
     ebitda_margin:(fOP*7+fT*5-np.capex*6)*capexROIPenalty,
     cost_per_student:-(fOP*1800+fT*1200),
     fee_recovery:(fO*9+fOP*7),
@@ -273,23 +481,25 @@ function simulateYear({kpis,params,archetype,sectors,fundingSource,deliveryMode,
     blended_ratio:(fT*12),
     new_revenue_streams:(fI*0.5+fT*0.5),
     breakeven_progress:(fOP*9+fT*6-np.capex*7)*capexROIPenalty,
-    roi:(fOP*5+fT*4-np.capex*6)*capexROIPenalty*evtGlobal,
+    roi:(fOP*5+fT*4-np.capex*6)*capexROIPenalty,
     recurring_rev_ratio:(fI*5+fT*3),
+    // Innovation
     online_learner_pct:(fT*13+fO*5),
-    digital_completion:(fT*11+fF*7)*delivMult,
+    digital_completion:(fT*11+fF*7),
     microcred_pct:(fT*9+fOP*4),
     launch_time:-(fT*9+fOP*7+fF*4),
     curriculum_refresh:(fF*7+fI*5+fT*5),
-    learner_sat:(fF*8+fT*7+fS*4)*delivMult,
+    learner_sat:(fF*8+fT*7+fS*4),
     return_upskill_pct:(fI*5+fT*5+fF*4),
     flexibility_rating:(fT*11+fOP*5),
     online_dropoff:-(fT*7+fS*5+fF*6),
     codesign_pct:(fI*13+fF*5),
     role_versatility:(fI*9+fF*7+fT*4),
     new_pilots:(fT*0.7+fI*0.6+fF*0.5),
-    alumni_nps:(fF*9+fS*6+fC*4)*stressMult,
-    employer_nps:(fI*11+fF*7)*stressMult,
-    tier1_placement:(fI*7+fF*6)*focusMult*stressMult,
+    // Premium
+    alumni_nps:(fF*9+fS*6+fC*4),
+    employer_nps:(fI*11+fF*7),
+    tier1_placement:(fI*7+fF*6),
     offer_app_ratio:(fI*0.45+fF*0.35),
     industry_exp_faculty:(fF*11+fI*7),
     tier1_partners:(fI*0.9+fO*0.3),
@@ -301,55 +511,109 @@ function simulateYear({kpis,params,archetype,sectors,fundingSource,deliveryMode,
     employer_recall:(fM*13+fI*9),
     repeat_applicants:(fO*7+fS*4+fOP*5),
   };
-  const funder=FUNDING_SOURCES.find(f=>f.id===fundingSource);
-  if(funder) Object.entries(funder.kpiBonus).forEach(([k,v])=>{if(deltas[k]!==undefined) deltas[k]=(deltas[k]||0)+v*0.25;});
-  const SCALE=0.08;
-  const newKpis={...kpis};
-  Object.keys(newKpis).forEach(k=>{
-    const d=(deltas[k]||0)*SCALE;
-    newKpis[k]=Math.round((newKpis[k]+d)*10)/10;
-    if(!["cost_per_student","lac","total_learners","annual_revenue","rev_per_learner"].includes(k)){
-      newKpis[k]=Math.max(0,Math.min(["ebitda_margin","roi"].includes(k)?60:100,newKpis[k]));
-    } else { newKpis[k]=Math.max(0,newKpis[k]); }
+
+  // Extra contextual KPI growth
+  Object.keys(kpis).forEach(k=>{
+    if(rawGrowth[k]===undefined&&EXTRA_KPI_DELTAS[k])
+      rawGrowth[k]=EXTRA_KPI_DELTAS[k](fF,fI,fT,fO,fS,fOP,fC);
   });
 
-  // ─── PERFORMANCE INDEX ───
-  // Score per KPI = improvement as % of base value (scale-aware).
-  // A 5% move on a base-40 KPI and a 5% move on a base-3.5 KPI both score equally.
-  // Good allocation → 40–70%. Excellent → 70%+. Flat/bad → <20%.
-  let totalScore=0, count=0;
+  // Funder bonus
+  const funder=FUNDING_SOURCES.find(f=>f.id===fundingSource);
+  if(funder) Object.entries(funder.kpiBonus).forEach(([k,v])=>{
+    if(rawGrowth[k]!==undefined) rawGrowth[k]=(rawGrowth[k]||0)+v*0.3;
+  });
+
+  // FIX 8/9/10: new_kpi = prev_kpi + growth×focusMult×stressPenalty×delivMult×evtGlobal
+  const SCALE=0.09;
+  const newKpis={...kpis};
+  Object.keys(newKpis).forEach(k=>{
+    const g=(rawGrowth[k]||0)*focusMult*stressPenalty*delivMult*evtGlobal*SCALE;
+    newKpis[k]=kpis[k]+g;
+    newKpis[k]=Math.round(newKpis[k]*10)/10;
+  });
+
+  // FIX 11: KPI decay when key params are starved
+  if(np.industry_eng<0.04){
+    if(newKpis.placement_rate!=null)  newKpis.placement_rate  =Math.max(0,newKpis.placement_rate-1.5);
+    if(newKpis.employer_repeat!=null) newKpis.employer_repeat =Math.max(0,newKpis.employer_repeat-1);
+    if(newKpis.employer_nps!=null)    newKpis.employer_nps    =Math.max(0,newKpis.employer_nps-1);
+  }
+  if(np.trainer_hire<0.05){
+    if(newKpis.completion_rate!=null) newKpis.completion_rate =Math.max(0,newKpis.completion_rate-2);
+    if(newKpis.retention_12!=null)    newKpis.retention_12    =Math.max(0,newKpis.retention_12-1.5);
+    if(newKpis.soqs!=null)            newKpis.soqs            =Math.max(0,newKpis.soqs-1);
+  }
+  if(np.mobilization<0.03&&np.digital_mkt<0.03){
+    if(newKpis.total_learners!=null)  newKpis.total_learners  =Math.max(0,newKpis.total_learners-20);
+    if(newKpis.rural_pct!=null)       newKpis.rural_pct       =Math.max(0,newKpis.rural_pct-1);
+  }
+
+  // FIX 2: Hard caps per KPI type
+  const UNCAPPED=new Set(["cost_per_student","lac","total_learners","annual_revenue","rev_per_learner","active_employers","tier1_partners","new_revenue_streams","new_pilots","intl_collab","media_mentions","impact_reports"]);
+  const WIDE=new Set(["ebitda_margin","roi"]);
+  Object.keys(newKpis).forEach(k=>{
+    if(UNCAPPED.has(k))        newKpis[k]=Math.max(0,newKpis[k]);
+    else if(WIDE.has(k))       newKpis[k]=Math.max(-30,Math.min(60,newKpis[k]));
+    else                       newKpis[k]=Math.max(0,Math.min(100,newKpis[k]));
+    newKpis[k]=Math.round(newKpis[k]*10)/10;
+  });
+
+  // PERFORMANCE INDEX: % of 5-year target gap closed per period
+  let totalScore=0,count=0;
   Object.keys(kpis).forEach(k=>{
     const def=arch.kpiPool.find(kp=>kp.id===k)||ARCHETYPES.flatMap(x=>x.kpiPool).find(kp=>kp.id===k);
     const inv=def?.inverse;
-    const before=kpis[k], after=newKpis[k];
-    const diff=inv?(before-after):(after-before);
-    // Reference band = 10% of base (or 5 units minimum) — so improvement = meaningful fraction of base
-    const refBand=Math.max(5, Math.abs(def?.base??50)*0.10);
-    const periodScore=Math.max(0,Math.min(100,(diff/refBand)*100));
+    const before=kpis[k],after=newKpis[k];
+    const start=initialKpis?.[k]??def?.base??before;
+    const rawTarget=endGoalTargets?.[k];
+    const target=rawTarget!=null?rawTarget:(inv?Math.max(0,start*0.6):start*1.4);
+    const improvement=inv?(before-after):(after-before);
+    const totalGap=Math.abs(inv?(start-target):(target-start));
+    const expectedPerPeriod=Math.max(totalGap/5,Math.abs(def?.base??50)*0.04,0.5);
+    const periodScore=Math.max(0,Math.min(100,(improvement/expectedPerPeriod)*100));
     totalScore+=periodScore; count++;
   });
   const yearScore=count>0?Math.round(totalScore/count):0;
 
-  const budgetChange=(yearScore-50)*0.4+evtGlobal*8-5;
-  const nextBudget=Math.max(65,Math.min(160,100+budgetChange));
+  // FIX 7: Budget accumulates from currentBudget
+  const budgetChange=(yearScore-50)*0.45+evtGlobal*10-6;
+  const base=currentBudget??100;
+  const nextBudget=Math.max(65,Math.min(200,base+budgetChange));
+
+  // FIX 12: Win condition at year 5
+  let winResult=null;
+  if(year===5&&endGoalTargets){
+    const hits=Object.entries(endGoalTargets).filter(([k,target])=>{
+      const def=ARCHETYPES.flatMap(x=>x.kpiPool).find(kp=>kp.id===k);
+      return newKpis[k]!=null&&(def?.inverse?newKpis[k]<=target:newKpis[k]>=target);
+    });
+    winResult={met:hits.length,total:Object.keys(endGoalTargets).length,success:hits.length===Object.keys(endGoalTargets).length};
+  }
+
+  // Narratives
   const narratives={};
   Object.keys(kpis).forEach(k=>{
     const before=kpis[k],after=newKpis[k];
-    const inv=arch.kpiPool.find(kp=>kp.id===k)?.inverse;
+    const inv=arch.kpiPool.find(kp=>kp.id===k)?.inverse||false;
     const good=inv?after<before:after>before;
     const msgs={
-      placement_rate:good?"Industry engagement paying off — employers showing up.":"Weak employer engagement left seats unfilled.",
-      retention_12:good?"Post-placement support keeping students in jobs longer.":"Students leaving early — check trainer quality.",
+      placement_rate:good?"Industry engagement paying off — employers showing up.":"Weak employer ties — placement budget underperforming.",
+      retention_12:good?"Post-placement support keeping learners in jobs longer.":"Early exits rising — trainer quality or stipends too low.",
       soqs:good?"Salary distribution healthy across bands.":"Salary quality uneven — too many low-end outliers.",
-      employer_repeat:good?"Employers returning. Trust is building.":"Employer repeat rate stagnant — deepen relationships.",
-      ebitda_margin:good?"Operational efficiency improving — margin heading right.":"Margins under pressure. Watch CapEx and ops cost.",
-      completion_rate:good?"Faculty and subsidies keeping learners engaged.":"Completion slipping — learner support needs review.",
-      dropout_rate:good?"Dropout reducing — field support is working.":"Dropout rising. Mobilisation alone won't fix this.",
+      employer_repeat:good?"Employers returning for repeat hiring. Trust compounding.":"Repeat rate flat — deepen employer relationships.",
+      ebitda_margin:good?"Operational efficiency improving — margin trending right.":"Margins under pressure. Review CapEx and ops overhead.",
+      completion_rate:good?"Faculty investment keeping learners engaged.":"Completion slipping — learner support needs review.",
+      dropout_rate:good?"Dropout reducing — field support and subsidies are working.":"Dropout rising. Mobilisation alone won't fix this.",
+      online_dropoff:good?"Digital engagement holding — strong platform quality.":"High digital dropout — learners disengaging online.",
+      annual_revenue:good?"Revenue streams gaining traction.":"Revenue below target — rethink outreach and partnerships.",
     };
-    narratives[k]=msgs[k]||(good?"Strategic investment paying off.":"Needs more focused investment next period.");
+    narratives[k]=msgs[k]||(good?"Investment paying off — keep the momentum.":"Underinvested this period — consider rebalancing.");
   });
-  return {newKpis,newStress,yearScore,nextBudget,event,narratives};
+
+  return {newKpis,newStress,yearScore,nextBudget,event,narratives,winResult};
 }
+
 
 // ═══════════════════════════════════════════════════════
 //  LIVE IMPACT ENGINE
@@ -397,6 +661,10 @@ function computeImpact({params,archetype,selectedKPIs,kpiPool,kpis}){
     media_mentions:(fM*16+fI*8)*2, campus_exp:fC*15+fOP*6,
     employer_recall:fM*13+fI*9, repeat_applicants:fO*7+fS*4+fOP*5,
   };
+  // extra contextual KPIs
+  selectedKPIs.forEach(id=>{
+    if(raw[id]===undefined && EXTRA_KPI_DELTAS[id]) raw[id]=EXTRA_KPI_DELTAS[id](fF,fI,fT,fO,fS,fOP,fC);
+  });
   const maxRaw=Math.max(...selectedKPIs.map(id=>raw[id]||0),0.01);
   const result={};
   selectedKPIs.forEach(id=>{
@@ -778,7 +1046,7 @@ function BlueprintStep({gameState,onConfirm}){
       <div style={{background:T.surface,border:`1px solid ${T.border}`,borderRadius:8,overflow:"hidden",marginBottom:28}}>
         <div style={{padding:"12px 18px",background:T.surfaceAlt,borderBottom:`1px solid ${T.border}`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
           <span style={{fontSize:11,fontWeight:700,color:T.text,textTransform:"uppercase",letterSpacing:"0.04em"}}>Final KPI Framework</span>
-          <span style={{...mkPill(a.color),fontSize:10}}>{allKpis.length} Metrics</span>
+          <span style={{...mkPill(a.color),fontSize:10}}>{core.length} Core + {extras.length} Contextual = {allKpis.length} Metrics</span>
         </div>
         <div style={{padding:"4px 0"}}>
           {core.map((k,i)=>(
@@ -814,50 +1082,28 @@ function BlueprintStep({gameState,onConfirm}){
 }
 
 // ═══════════════════════════════════════════════════════
-//  EVENT TOAST — animated pop-in that settles to banner
+//  EVENT BANNER — inline, never blocks clicks
 // ═══════════════════════════════════════════════════════
 function EventToast({event,stress,archColor,onDismiss}){
-  const [phase,setPhase]=useState("entering");
   const isStressAlert=stress>7;
-
-  useEffect(()=>{
-    const t1=setTimeout(()=>setPhase("visible"),50);
-    const t2=setTimeout(()=>setPhase("settling"),2800);
-    const t3=setTimeout(()=>{setPhase("settled");onDismiss&&onDismiss();},3600);
-    return ()=>{clearTimeout(t1);clearTimeout(t2);clearTimeout(t3);};
-  },[]);
-
-  const toastStyle={
-    position:"fixed",top:72,left:"50%",
-    transform:phase==="entering"?"translateX(-50%) translateY(-24px) scale(0.95)":"translateX(-50%) translateY(0) scale(1)",
-    opacity:phase==="entering"?0:1,
-    transition:"all 0.45s cubic-bezier(0.34,1.56,0.64,1)",
-    zIndex:500,
-    background:"#0f172a",
-    color:"#f1f5f9",
-    borderRadius:12,
-    padding:"16px 22px",
-    boxShadow:"0 20px 60px rgba(0,0,0,0.35)",
-    maxWidth:460,
-    width:"calc(100vw - 40px)",
-    display:"flex",gap:14,alignItems:"flex-start",
-    border:`1px solid ${isStressAlert?"#dc2626":"#334155"}`,
-    borderLeft:`4px solid ${isStressAlert?"#dc2626":archColor}`,
-    cursor:"pointer",
-  };
-
   return (
-    <div style={toastStyle} onClick={()=>{setPhase("settling");setTimeout(onDismiss,300);}}>
-      <span style={{fontSize:22,flexShrink:0}}>{isStressAlert?"🚨":event.year===1?"🚀":"📡"}</span>
-      <div>
-        <div style={{fontWeight:700,fontSize:12,color:isStressAlert?"#fca5a5":archColor,textTransform:"uppercase",letterSpacing:"0.05em",marginBottom:4}}>
+    <div style={{
+      background:isStressAlert?"#450a0a":"#0f172a",
+      borderRadius:10,padding:"12px 18px",marginBottom:14,
+      display:"flex",gap:12,alignItems:"flex-start",
+      borderLeft:`4px solid ${isStressAlert?"#dc2626":archColor}`,
+      position:"relative",
+    }}>
+      <span style={{fontSize:18,flexShrink:0,marginTop:1}}>{isStressAlert?"🚨":event.year===1?"🚀":"📡"}</span>
+      <div style={{flex:1}}>
+        <div style={{fontWeight:700,fontSize:11,color:isStressAlert?"#fca5a5":archColor,textTransform:"uppercase",letterSpacing:"0.05em",marginBottom:3}}>
           {isStressAlert?"⚠ High Operational Stress":event.name}
         </div>
-        <p style={{fontSize:12,color:"#cbd5e1",lineHeight:1.55,margin:0}}>
-          {isStressAlert?`Stress at ${stress.toFixed(1)}/10. Faculty underinvestment is penalising all KPI delivery. Prioritise trainer hiring immediately.`:event.desc}
+        <p style={{fontSize:11,color:"#cbd5e1",lineHeight:1.5,margin:0}}>
+          {isStressAlert?`Stress at ${stress.toFixed(1)}/10. Faculty underinvestment penalising all KPI delivery. Increase trainer hiring.`:event.desc}
         </p>
-        <div style={{fontSize:10,color:"#64748b",marginTop:6}}>Click to dismiss</div>
       </div>
+      <button onClick={onDismiss} style={{background:"none",border:"none",color:"#64748b",cursor:"pointer",fontSize:14,padding:"0 4px",lineHeight:1,flexShrink:0}}>✕</button>
     </div>
   );
 }
@@ -885,7 +1131,7 @@ function YearPlay({gameState,onYearComplete}){
   const liveImpacts=useMemo(()=>computeImpact({params,archetype,selectedKPIs,kpiPool,kpis:periodKpis}),[params,archetype,selectedKPIs,kpiPool,periodKpis]);
 
   const commitPeriod=()=>{
-    const result=simulateYear({kpis:periodKpis,params,archetype,sectors,fundingSource,deliveryMode,year,stress:periodStress});
+    const result=simulateYear({kpis:periodKpis,params,archetype,sectors,fundingSource,deliveryMode,year,stress:periodStress,currentBudget:periodBudget,initialKpis:gameState.initialKpis||kpis,endGoalTargets:endGoalDef?.kpiTargets});
     const newHist=[...periodHistory,{period,kpisBefore:periodKpis,result}];
     setPeriodHistory(newHist);
     setPeriodKpis(result.newKpis);
@@ -893,7 +1139,8 @@ function YearPlay({gameState,onYearComplete}){
     setPeriodBudget(result.nextBudget);
     if(period+1>=cadence.periods){
       const avgScore=Math.round(newHist.reduce((s,h)=>s+h.result.yearScore,0)/newHist.length);
-      onYearComplete({finalKpis:result.newKpis,finalStress:result.newStress,nextBudget:result.nextBudget,yearScore:avgScore,periodHistory:newHist,event});
+      const lastWin=newHist[newHist.length-1]?.result?.winResult||null;
+      onYearComplete({finalKpis:result.newKpis,finalStress:result.newStress,nextBudget:result.nextBudget,yearScore:avgScore,periodHistory:newHist,event,winResult:lastWin});
     } else {
       setPeriod(period+1);
       setShowToast(result.newStress>7); // show stress alert if stress spiked
@@ -904,76 +1151,66 @@ function YearPlay({gameState,onYearComplete}){
   const allocPct=Math.round((totalAlloc/100)*periodBudget*10)/10;
 
   return (
-    <div style={{maxWidth:1200,margin:"0 auto",padding:"22px 20px",position:"relative"}}>
-
-      {/* Animated event/stress toast */}
-      {showToast&&(
-        <EventToast
-          event={event}
-          stress={periodStress}
-          archColor={a.color}
-          onDismiss={()=>setShowToast(false)}
-        />
-      )}
+    <div style={{maxWidth:1200,margin:"0 auto",padding:"22px 20px"}}>
 
       {/* ── TOP HEADER ── */}
-      <div style={{marginBottom:18,borderBottom:`1px solid ${T.border}`,paddingBottom:16}}>
-        {/* Year + period context */}
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap",gap:12,marginBottom:12}}>
-          <div>
-            <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:8}}>
-              <span style={mkPill(a.color)}>{a.icon} {a.label}</span>
-              <span style={mkPill("#475569")}>Year {year} / 5</span>
-              <span style={mkPill("#7c3aed")}>{cadence.label}</span>
-              <span style={mkPill(periodStress>7?"#dc2626":periodStress>4?"#d97706":"#059669")}>
-                {periodStress>7?"🔴":"periodStress>4"?"🟡":"🟢"} Stress {periodStress.toFixed(1)}
-              </span>
-              {sectors.length>1&&<span style={mkPill("#0284c7")}>Focus {sectors.length===2?"0.85×":"0.70×"}</span>}
-            </div>
-            <h2 style={{fontWeight:800,fontSize:20,color:T.text,letterSpacing:"-0.01em"}}>
-              Strategic Budget Allocation — {cadence.pLabel(period)}
-            </h2>
-          </div>
+      <div style={{marginBottom:16,borderBottom:`1px solid ${T.border}`,paddingBottom:16}}>
 
-          {/* Budget display — prominent */}
-          <div style={{background:"#0f172a",borderRadius:10,padding:"14px 22px",textAlign:"right",minWidth:180}}>
-            <div style={{fontSize:9,color:"#64748b",fontWeight:700,textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:4}}>Total Budget</div>
-            <div style={{fontFamily:T.mono,fontWeight:800,fontSize:28,color:"#f1f5f9",lineHeight:1}}>₹{periodBudget.toFixed(1)} Cr</div>
-            <div style={{fontSize:10,fontFamily:T.mono,color:Math.abs(totalAlloc-100)<=1?"#4ade80":"#f87171",marginTop:5,fontWeight:600}}>
-              {totalAlloc}/100 units · ₹{allocPct} Cr deployed
+        {/* Row 1: Budget prominently at top */}
+        <div style={{background:"#0f172a",borderRadius:10,padding:"14px 22px",marginBottom:14,display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:12}}>
+          <div>
+            <div style={{fontSize:9,color:"#64748b",fontWeight:700,textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:3}}>Total Budget Available</div>
+            <div style={{fontFamily:T.mono,fontWeight:800,fontSize:32,color:"#f1f5f9",lineHeight:1}}>₹{periodBudget.toFixed(1)} Cr</div>
+          </div>
+          <div style={{display:"flex",gap:8,flexWrap:"wrap",alignItems:"center"}}>
+            <span style={mkPill(a.color)}>{a.icon} {a.label}</span>
+            <span style={mkPill("#475569")}>Year {year} / 5</span>
+            <span style={mkPill("#7c3aed")}>{cadence.label}</span>
+            <span style={mkPill(periodStress>7?"#dc2626":periodStress>4?"#d97706":"#059669")}>
+              {periodStress>7?"🔴":periodStress>4?"🟡":"🟢"} Stress {periodStress.toFixed(1)}
+            </span>
+            {sectors.length>1&&<span style={mkPill("#0284c7")}>Focus {sectors.length===2?"0.85×":"0.70×"}</span>}
+          </div>
+          <div style={{textAlign:"right"}}>
+            <div style={{fontSize:10,fontFamily:T.mono,color:Math.abs(totalAlloc-100)<=2?"#4ade80":"#f87171",fontWeight:700}}>
+              {totalAlloc} / 100 units allocated
             </div>
+            <div style={{fontSize:10,color:"#94a3b8",marginTop:2}}>₹{allocPct} Cr deployed</div>
           </div>
         </div>
 
+        {/* Row 2: Period heading */}
+        <h2 style={{fontWeight:800,fontSize:18,color:T.text,letterSpacing:"-0.01em",marginBottom:10}}>
+          Strategic Budget Allocation — {cadence.pLabel(period)}
+        </h2>
+
+        {/* Event banner — always inline, never floating */}
+        {showToast?(
+          <EventToast event={event} stress={periodStress} archColor={a.color} onDismiss={()=>setShowToast(false)}/>
+        ):(
+          <div style={{background:"#fffbeb",border:`1px solid #fde68a`,borderLeft:`3px solid #f59e0b`,borderRadius:6,padding:"9px 14px",display:"flex",gap:10,alignItems:"flex-start"}}>
+            <span style={{fontSize:13}}>📡</span>
+            <div>
+              <span style={{fontWeight:700,fontSize:11,color:"#92400e",textTransform:"uppercase",letterSpacing:"0.03em"}}>{event.name} · </span>
+              <span style={{fontSize:11,color:"#78350f"}}>{event.desc}</span>
+            </div>
+          </div>
+        )}
+
         {/* Period progress pips */}
         {cadence.periods>1&&(
-          <div style={{display:"flex",gap:6,alignItems:"center"}}>
+          <div style={{display:"flex",gap:6,alignItems:"center",marginTop:12}}>
             {Array.from({length:cadence.periods}).map((_,i)=>(
               <div key={i} style={{display:"flex",alignItems:"center",gap:6}}>
                 <div style={{height:5,width:i<period?56:i===period?72:40,borderRadius:3,background:i<period?"#059669":i===period?a.color:T.track,transition:"all 0.3s ease"}}/>
                 {i===period&&<span style={{fontSize:9,color:a.color,fontWeight:700,fontFamily:T.mono}}>NOW</span>}
-                {i<period&&(
-                  <span style={{fontSize:9,color:"#059669",fontWeight:700,fontFamily:T.mono}}>
-                    {periodHistory[i]?.result?.yearScore}%
-                  </span>
-                )}
+                {i<period&&<span style={{fontSize:9,color:"#059669",fontWeight:700,fontFamily:T.mono}}>{periodHistory[i]?.result?.yearScore}%</span>}
               </div>
             ))}
             <span style={{fontSize:9,color:T.textFaint,marginLeft:4}}>Period {period+1}/{cadence.periods}</span>
           </div>
         )}
       </div>
-
-      {/* ── SETTLED EVENT BANNER (after toast dismisses) ── */}
-      {!showToast&&(
-        <div style={{background:"#fffbeb",border:`1px solid #fde68a`,borderLeft:`3px solid #f59e0b`,borderRadius:6,padding:"9px 14px",marginBottom:14,display:"flex",gap:10,alignItems:"flex-start"}}>
-          <span style={{fontSize:13}}>📡</span>
-          <div>
-            <span style={{fontWeight:700,fontSize:11,color:"#92400e",textTransform:"uppercase",letterSpacing:"0.03em"}}>{event.name} · </span>
-            <span style={{fontSize:11,color:"#78350f"}}>{event.desc}</span>
-          </div>
-        </div>
-      )}
 
       {/* ── 2-PANEL ── */}
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:18,marginBottom:18}} className="play-grid">
@@ -1088,9 +1325,10 @@ function YearPlay({gameState,onYearComplete}){
 //  YEAR RESULT
 // ═══════════════════════════════════════════════════════
 function YearResult({yearData,gameState,onNext}){
-  const {yearScore,finalKpis,finalStress,nextBudget,periodHistory}=yearData;
+  const {yearScore,finalKpis,finalStress,nextBudget,periodHistory,winResult}=yearData;
   const a=ARCHETYPES.find(x=>x.id===gameState.archetype);
   const sc=yearScore>=55?"#059669":yearScore>=30?"#d97706":"#dc2626";
+  const endGoalDef=a.endGoals.find(g=>g.id===gameState.endGoal);
   return (
     <div style={{maxWidth:1000,margin:"0 auto",padding:"28px 20px"}}>
       <div style={{marginBottom:20}}>
@@ -1099,10 +1337,41 @@ function YearResult({yearData,gameState,onNext}){
           {yearScore>=55?"Above Target":yearScore>=30?"On Target":"Below Target"}
         </h2>
       </div>
+      {/* Year 5 win condition verdict */}
+      {gameState.year===5&&winResult&&(
+        <div style={{
+          background:winResult.success?"linear-gradient(135deg,#064e3b,#065f46)":"linear-gradient(135deg,#450a0a,#7f1d1d)",
+          borderRadius:12,padding:"20px 24px",marginBottom:24,
+          display:"flex",alignItems:"center",gap:20,flexWrap:"wrap"
+        }}>
+          <span style={{fontSize:40}}>{winResult.success?"🏆":"📋"}</span>
+          <div style={{flex:1}}>
+            <div style={{fontSize:10,color:winResult.success?"#6ee7b7":"#fca5a5",fontWeight:700,textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:4}}>
+              5-Year End Goal: {endGoalDef?.label}
+            </div>
+            <div style={{fontSize:20,fontWeight:800,color:"#fff",marginBottom:4}}>
+              {winResult.success?"Goal Achieved! All targets met.":
+               winResult.met===winResult.total-1?"Almost — one target missed.":
+               `${winResult.met} of ${winResult.total} targets reached.`}
+            </div>
+            <div style={{fontSize:12,color:winResult.success?"#a7f3d0":"#fecaca"}}>
+              {winResult.met}/{winResult.total} critical KPI targets hit across 5 years
+            </div>
+          </div>
+          <div style={{
+            background:winResult.success?"#059669":"#dc2626",
+            color:"#fff",fontWeight:800,fontSize:14,
+            padding:"8px 20px",borderRadius:20
+          }}>
+            {winResult.success?"✓ SUCCESS":"✗ INCOMPLETE"}
+          </div>
+        </div>
+      )}
       <div style={{display:"grid",gridTemplateColumns:"180px 1fr",gap:16,marginBottom:28}} className="result-header-grid">
         <div style={{...mkCard(sc,true),justifyContent:"center",alignItems:"center"}}>
           <div style={{fontFamily:T.mono,fontWeight:800,fontSize:52,color:sc,textAlign:"center",lineHeight:1}}>{yearScore}%</div>
           <div style={{fontSize:10,color:T.textMuted,textAlign:"center",textTransform:"uppercase",marginTop:6}}>Performance Index</div>
+          <div style={{fontSize:9,color:T.textFaint,textAlign:"center",marginTop:3}}>% of target gap closed this period</div>
         </div>
         <div style={mkCard()}>
           <div style={{display:"flex",flexDirection:"column",gap:14,padding:"4px 0"}}>
@@ -1362,14 +1631,6 @@ export default function InstituteCommand(){
   const [lastYearData,setLastYearData]=useState(null);
 
   const buildKPIs=(ids,pool)=>{ const k={}; ids.forEach(id=>{const d=pool.find(x=>x.id===id);if(d) k[id]=d.base;}); return k; };
-  const getExtras=(sectors,fundingSource,archetype)=>{
-    const arch=ARCHETYPES.find(a=>a.id===archetype);
-    const extras=[];
-    const funder=FUNDING_SOURCES.find(f=>f.id===fundingSource);
-    if(funder?.kpiBonus) Object.keys(funder.kpiBonus).forEach(k=>{if(!arch.kpiPool.find(kp=>kp.id===k)){const found=ARCHETYPES.flatMap(x=>x.kpiPool).find(kp=>kp.id===k);if(found&&!extras.find(e=>e.id===k)) extras.push({...found,tag:funder.label});}});
-    sectors.forEach(sid=>{const sec=SECTORS.find(s=>s.id===sid);if(sec?.salaryMult>1.1){const k="avg_salary";if(!arch.kpiPool.find(kp=>kp.id===k)&&!extras.find(e=>e.id===k)) extras.push({id:k,label:"Avg Starting Salary (LPA)",base:3.5,unit:"L",tag:sec.label});}});
-    return extras;
-  };
 
   const handleSetup=(step,data)=>{
     if(step==="archetype"){setGs(g=>({...g,...data}));setScreen("kpis");}
@@ -1378,13 +1639,14 @@ export default function InstituteCommand(){
     else if(step==="funding"){
       const funder=FUNDING_SOURCES.find(f=>f.id===data.fundingSource);
       const budgetStart=Math.round(100*(funder?.budgetMult||1));
-      const extras=getExtras(gs.sectors||[],data.fundingSource,gs.archetype);
+      const extras=getContextualExtras({sectors:gs.sectors||[],fundingSource:data.fundingSource,deliveryMode:data.deliveryMode,archetype:gs.archetype});
       const mergedPool=[...gs.kpiPool||[]];
       extras.forEach(e=>{if(!mergedPool.find(k=>k.id===e.id)) mergedPool.push(e);});
-      let mergedSelected=[...gs.selectedKPIs||[]];
-      extras.forEach(e=>{if(mergedSelected.length<10&&!mergedSelected.includes(e.id)) mergedSelected.push(e.id);});
+      // extras always appended after the 10 archetype KPIs the user selected
+      const mergedSelected=[...gs.selectedKPIs||[]];
+      extras.forEach(e=>{if(!mergedSelected.includes(e.id)) mergedSelected.push(e.id);});
       const kpis=buildKPIs(mergedSelected,mergedPool);
-      setGs(g=>({...g,...data,selectedKPIs:mergedSelected,kpiPool:mergedPool,year:1,budget:budgetStart,stress:0,kpis}));
+      setGs(g=>({...g,...data,selectedKPIs:mergedSelected,kpiPool:mergedPool,year:1,budget:budgetStart,stress:0,kpis,initialKpis:{...kpis}}));
       setScreen("blueprint");
     }
   };
