@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from "react";
+import React, { useState, useMemo, useCallback, useEffect } from "react";
 
 // ═══════════════════════════════════════════════════════
 //  DESIGN TOKENS
@@ -603,4 +603,836 @@ function KPIStep({archetype,extraKpiIds,onNext,onBack}){
                   <div style={{fontWeight:600,fontSize:12,color:isSel?a.color:T.text,marginBottom:3,lineHeight:1.3}}>{kpi.label}</div>
                   <div style={{fontSize:10,color:T.textFaint,fontFamily:T.mono}}>Base: {kpi.base}{kpi.unit}</div>
                   <div style={{display:"flex",gap:4,marginTop:4,flexWrap:"wrap"}}>
-                    {kpi.inverse&&<span style={{...mkPill("#ef4444"),fontSize:8}}>↓ lower=better</
+                    {kpi.inverse&&<span style={{...mkPill("#ef4444"),fontSize:8}}>↓ lower=better</span>}
+                    {kpi.tag&&<span style={{...mkPill("#9333ea"),fontSize:8}}>{kpi.tag}</span>}
+                  </div>
+                </div>
+                {isSel&&<div style={{width:16,height:16,borderRadius:99,background:a.color,color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,flexShrink:0,marginLeft:6}}>✓</div>}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      <div style={{display:"flex",justifyContent:"space-between"}}>
+        <button onClick={onBack} style={mkBtn(T.textMuted,true)}>← Back</button>
+        <button onClick={()=>selected.length===10&&onNext({selectedKPIs:selected,kpiPool:pool})} style={{...mkBtn(a.color),opacity:selected.length===10?1:0.4}}>
+          Next: Sector Selection →
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function SectorStep({archetype,onNext,onBack}){
+  const [selected,setSelected]=useState([]);
+  const [expanded,setExpanded]=useState(null);
+  const a=ARCHETYPES.find(x=>x.id===archetype);
+  const toggle=(id)=>{ if(selected.includes(id)) setSelected(selected.filter(s=>s!==id)); else if(selected.length<3) setSelected([...selected,id]); };
+  const dc={Growing:"#059669",Booming:"#059669",Stable:"#d97706",Volatile:"#dc2626",Emerging:"#7c3aed",Recovering:"#d97706"};
+  return (
+    <div style={{maxWidth:1000,margin:"0 auto",padding:"28px 20px"}}>
+      <StepIndicator current={3}/>
+      <div style={{marginBottom:22,textAlign:"center"}}>
+        <h2 style={{fontWeight:700,fontSize:26,color:T.text,marginBottom:6}}>Sector Specialization</h2>
+        <p style={{color:T.textMuted,fontSize:13}}>Choose up to 3 verticals. More sectors = lower focus (2: 0.85×, 3: 0.70×).</p>
+        {selected.length>0&&<div style={{marginTop:10}}><span style={{...mkPill(a.color),padding:"4px 12px",fontSize:11}}>{selected.length} Sector{selected.length>1?"s":""} · Focus: {selected.length===1?"1.00×":selected.length===2?"0.85×":"0.70×"}</span></div>}
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(280px,1fr))",gap:11,marginBottom:28}}>
+        {SECTORS.map(sec=>{
+          const isSel=selected.includes(sec.id),exp=expanded===sec.id;
+          return (
+            <div key={sec.id} style={{...mkCard(a.color,isSel),cursor:"pointer"}} onClick={()=>toggle(sec.id)}>
+              <div style={{display:"flex",justifyContent:"space-between",marginBottom:8}}>
+                <div>
+                  <div style={{fontWeight:600,fontSize:13,color:T.text}}>{sec.label}</div>
+                  <div style={{fontSize:10,color:T.textFaint,fontFamily:T.mono}}>{sec.salary}</div>
+                </div>
+                {isSel&&<div style={{width:18,height:18,borderRadius:99,background:a.color,color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,flexShrink:0}}>✓</div>}
+              </div>
+              <div style={{display:"flex",flexWrap:"wrap",gap:4,marginBottom:10}}>
+                <span style={{...mkPill(dc[sec.demand]||T.textMuted),fontSize:9}}>{sec.demand}</span>
+                <span style={{...mkPill(T.textMuted),fontSize:9}}>CapEx: {sec.capex}</span>
+                <span style={{...mkPill(sec.govtPriority>=8?"#059669":T.textMuted),fontSize:9}}>Govt: {sec.govtPriority}/10</span>
+              </div>
+              <button onClick={e=>{e.stopPropagation();setExpanded(exp?null:sec.id);}} style={{background:"none",border:"none",color:a.color,fontSize:11,cursor:"pointer",fontWeight:600,padding:0,textAlign:"left"}}>
+                {exp?"▲ Hide":"▼ View"} SID
+              </button>
+              {exp&&<div style={{marginTop:10,paddingTop:10,borderTop:`1px solid ${T.border}`,fontSize:11,color:T.textMuted,lineHeight:1.6}}>
+                <div>CapEx: {sec.capex} · Govt Priority: {sec.govtPriority}/10</div>
+                <div style={{marginTop:4,fontWeight:600,color:"#b45309"}}>⚠ {sec.constraint}</div>
+              </div>}
+            </div>
+          );
+        })}
+      </div>
+      <div style={{display:"flex",justifyContent:"space-between"}}>
+        <button onClick={onBack} style={mkBtn(T.textMuted,true)}>← Back</button>
+        <button onClick={()=>selected.length>0&&onNext({sectors:selected})} style={{...mkBtn(a.color),opacity:selected.length>0?1:0.4}}>
+          Next: Funding & Delivery →
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function FundingStep({archetype,sectors,onNext,onBack}){
+  const [funding,setFunding]=useState(null);
+  const [delivery,setDelivery]=useState(null);
+  const a=ARCHETYPES.find(x=>x.id===archetype);
+  return (
+    <div style={{maxWidth:1000,margin:"0 auto",padding:"28px 20px"}}>
+      <StepIndicator current={4}/>
+      <div style={{marginBottom:28,textAlign:"center"}}>
+        <h2 style={{fontWeight:700,fontSize:26,color:T.text,marginBottom:6}}>Operational Context</h2>
+        <p style={{color:T.textMuted,fontSize:13}}>Select your capital source and instructional delivery framework.</p>
+      </div>
+      <div style={{marginBottom:32}}>
+        <div style={{fontSize:10,fontWeight:700,color:T.textMuted,marginBottom:10,textTransform:"uppercase"}}>Capital Allocation</div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(270px,1fr))",gap:11}}>
+          {FUNDING_SOURCES.map(f=>(
+            <div key={f.id} onClick={()=>setFunding(f.id)} style={{...mkCard(a.color,funding===f.id),cursor:"pointer"}}>
+              <div style={{display:"flex",gap:10,alignItems:"flex-start",marginBottom:8}}>
+                <span style={{fontSize:18}}>{f.icon}</span>
+                <div style={{fontWeight:600,fontSize:13,color:T.text}}>{f.label}</div>
+              </div>
+              <p style={{fontSize:12,color:T.textMuted,lineHeight:1.45,marginBottom:10,flexGrow:1}}>{f.desc}</p>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                <span style={{fontSize:11,color:a.color,fontWeight:700}}>Budget ×{f.budgetMult}</span>
+                <span style={{...mkPill(T.textFaint),fontSize:9}}>Patience {f.patience}/5</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div style={{marginBottom:28}}>
+        <div style={{fontSize:10,fontWeight:700,color:T.textMuted,marginBottom:10,textTransform:"uppercase"}}>Instructional Design</div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(210px,1fr))",gap:11}}>
+          {DELIVERY_MODES.map(d=>{
+            const compat=d.bestFor.some(s=>sectors.includes(s));
+            return (
+              <div key={d.id} onClick={()=>setDelivery(d.id)} style={{...mkCard(a.color,delivery===d.id),cursor:"pointer"}}>
+                <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:8}}>
+                  <span>{d.icon}</span>
+                  <div style={{fontWeight:600,fontSize:13,color:T.text}}>{d.label}</div>
+                </div>
+                <div style={{marginBottom:8}}>
+                  <span style={{...mkPill(compat?"#059669":"#dc2626"),fontSize:9}}>{compat?"Sector Compatible":"Overhead Risk"}</span>
+                </div>
+                <div style={{fontSize:10,color:T.textFaint,fontFamily:T.mono}}>CapEx Weight: {d.capexMult}×</div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+      <div style={{display:"flex",justifyContent:"space-between"}}>
+        <button onClick={onBack} style={mkBtn(T.textMuted,true)}>← Back</button>
+        <button onClick={()=>funding&&delivery&&onNext({fundingSource:funding,deliveryMode:delivery})} style={{...mkBtn(a.color),opacity:funding&&delivery?1:0.4}}>
+          Launch Simulation →
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════
+//  BLUEPRINT SCREEN — shown after funding before play
+// ═══════════════════════════════════════════════════════
+function BlueprintStep({gameState,onConfirm}){
+  const a=ARCHETYPES.find(x=>x.id===gameState.archetype);
+  const endGoalDef=a.endGoals.find(g=>g.id===gameState.endGoal);
+  const funder=FUNDING_SOURCES.find(f=>f.id===gameState.fundingSource);
+  const delivery=DELIVERY_MODES.find(d=>d.id===gameState.deliveryMode);
+
+  // Group KPIs: core 10 vs extras
+  const coreIds=new Set(gameState.selectedKPIs.slice(0,10));
+  const allKpis=gameState.selectedKPIs.map(id=>gameState.kpiPool.find(k=>k.id===id)).filter(Boolean);
+  const extras=allKpis.filter(k=>k.tag);
+  const core=allKpis.filter(k=>!k.tag);
+
+  return (
+    <div style={{maxWidth:860,margin:"0 auto",padding:"32px 20px"}}>
+      <div style={{textAlign:"center",marginBottom:32}}>
+        <div style={{fontSize:30,marginBottom:10}}>📋</div>
+        <h2 style={{fontWeight:800,fontSize:26,color:T.text,marginBottom:6}}>Institutional Blueprint</h2>
+        <p style={{color:T.textMuted,fontSize:13}}>Your final performance framework before the simulation begins.</p>
+      </div>
+
+      {/* Context summary */}
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))",gap:10,marginBottom:28}}>
+        {[
+          {label:"Archetype",val:a.label,color:a.color,icon:a.icon},
+          {label:"End Goal",val:endGoalDef.label,color:a.color,icon:"🎯"},
+          {label:"Funding",val:funder.label,color:"#2563eb",icon:funder.icon},
+          {label:"Delivery",val:delivery.label,color:"#7c3aed",icon:delivery.icon},
+          {label:"Starting Budget",val:`₹${gameState.budget} Cr`,color:"#059669",icon:"💰"},
+          {label:"Sectors",val:gameState.sectors.map(sid=>SECTORS.find(s=>s.id===sid)?.label||sid).join(", "),color:"#d97706",icon:"🏭"},
+        ].map(item=>(
+          <div key={item.label} style={{background:T.surface,border:`1px solid ${T.border}`,borderRadius:8,padding:"12px 14px"}}>
+            <div style={{fontSize:9,color:T.textFaint,fontWeight:700,textTransform:"uppercase",marginBottom:5}}>{item.label}</div>
+            <div style={{fontSize:11,fontWeight:700,color:item.color,lineHeight:1.35}}>{item.icon} {item.val}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* KPI list */}
+      <div style={{background:T.surface,border:`1px solid ${T.border}`,borderRadius:8,overflow:"hidden",marginBottom:28}}>
+        <div style={{padding:"12px 18px",background:T.surfaceAlt,borderBottom:`1px solid ${T.border}`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <span style={{fontSize:11,fontWeight:700,color:T.text,textTransform:"uppercase",letterSpacing:"0.04em"}}>Final KPI Framework</span>
+          <span style={{...mkPill(a.color),fontSize:10}}>{allKpis.length} Metrics</span>
+        </div>
+        <div style={{padding:"4px 0"}}>
+          {core.map((k,i)=>(
+            <div key={k.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 18px",borderBottom:i<core.length-1||extras.length>0?`1px solid ${T.border}`:"none",background:i%2===0?T.surface:T.surfaceAlt+"60"}}>
+              <div style={{display:"flex",alignItems:"center",gap:10}}>
+                <div style={{width:6,height:6,borderRadius:99,background:a.color,flexShrink:0}}/>
+                <span style={{fontWeight:600,fontSize:13,color:T.text}}>{k.label}</span>
+                {k.inverse&&<span style={{...mkPill("#ef4444"),fontSize:8}}>↓ lower=better</span>}
+                {endGoalDef.kpiTargets[k.id]!=null&&<span style={{...mkPill("#f59e0b"),fontSize:8}}>Target: {endGoalDef.kpiTargets[k.id]}</span>}
+              </div>
+              <span style={{fontFamily:T.mono,fontSize:12,color:T.textMuted}}>Baseline {k.base}{k.unit||""}</span>
+            </div>
+          ))}
+          {extras.map((k,i)=>(
+            <div key={k.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 18px",borderBottom:i<extras.length-1?`1px solid ${T.border}`:"none",background:"#fefce8"}}>
+              <div style={{display:"flex",alignItems:"center",gap:10}}>
+                <div style={{width:6,height:6,borderRadius:99,background:"#f59e0b",flexShrink:0}}/>
+                <span style={{fontWeight:600,fontSize:13,color:T.text}}>{k.label}</span>
+                {k.inverse&&<span style={{...mkPill("#ef4444"),fontSize:8}}>↓ lower=better</span>}
+                <span style={{...mkPill("#d97706"),fontSize:8}}>+ from {k.tag}</span>
+              </div>
+              <span style={{fontFamily:T.mono,fontSize:12,color:T.textMuted}}>Baseline {k.base}{k.unit||""}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <button onClick={onConfirm} style={{...mkBtn(a.color),width:"100%",padding:"14px",fontSize:15,fontWeight:700,borderRadius:8}}>
+        Confirm & Begin 5-Year Simulation →
+      </button>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════
+//  EVENT TOAST — animated pop-in that settles to banner
+// ═══════════════════════════════════════════════════════
+function EventToast({event,stress,archColor,onDismiss}){
+  const [phase,setPhase]=useState("entering");
+  const isStressAlert=stress>7;
+
+  useEffect(()=>{
+    const t1=setTimeout(()=>setPhase("visible"),50);
+    const t2=setTimeout(()=>setPhase("settling"),2800);
+    const t3=setTimeout(()=>{setPhase("settled");onDismiss&&onDismiss();},3600);
+    return ()=>{clearTimeout(t1);clearTimeout(t2);clearTimeout(t3);};
+  },[]);
+
+  const toastStyle={
+    position:"fixed",top:72,left:"50%",
+    transform:phase==="entering"?"translateX(-50%) translateY(-24px) scale(0.95)":"translateX(-50%) translateY(0) scale(1)",
+    opacity:phase==="entering"?0:1,
+    transition:"all 0.45s cubic-bezier(0.34,1.56,0.64,1)",
+    zIndex:500,
+    background:"#0f172a",
+    color:"#f1f5f9",
+    borderRadius:12,
+    padding:"16px 22px",
+    boxShadow:"0 20px 60px rgba(0,0,0,0.35)",
+    maxWidth:460,
+    width:"calc(100vw - 40px)",
+    display:"flex",gap:14,alignItems:"flex-start",
+    border:`1px solid ${isStressAlert?"#dc2626":"#334155"}`,
+    borderLeft:`4px solid ${isStressAlert?"#dc2626":archColor}`,
+    cursor:"pointer",
+  };
+
+  return (
+    <div style={toastStyle} onClick={()=>{setPhase("settling");setTimeout(onDismiss,300);}}>
+      <span style={{fontSize:22,flexShrink:0}}>{isStressAlert?"🚨":event.year===1?"🚀":"📡"}</span>
+      <div>
+        <div style={{fontWeight:700,fontSize:12,color:isStressAlert?"#fca5a5":archColor,textTransform:"uppercase",letterSpacing:"0.05em",marginBottom:4}}>
+          {isStressAlert?"⚠ High Operational Stress":event.name}
+        </div>
+        <p style={{fontSize:12,color:"#cbd5e1",lineHeight:1.55,margin:0}}>
+          {isStressAlert?`Stress at ${stress.toFixed(1)}/10. Faculty underinvestment is penalising all KPI delivery. Prioritise trainer hiring immediately.`:event.desc}
+        </p>
+        <div style={{fontSize:10,color:"#64748b",marginTop:6}}>Click to dismiss</div>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════
+//  YEAR PLAY — screenshot-matched design
+// ═══════════════════════════════════════════════════════
+function YearPlay({gameState,onYearComplete}){
+  const {year,archetype,sectors,budget,kpis,kpiPool,selectedKPIs,endGoal,stress,fundingSource,deliveryMode}=gameState;
+  const a=ARCHETYPES.find(x=>x.id===archetype);
+  const event=YEAR_EVENTS.find(e=>e.year===year);
+  const cadence=getCadence(year);
+  const endGoalDef=a.endGoals.find(g=>g.id===endGoal);
+
+  const [period,setPeriod]=useState(0);
+  const [periodKpis,setPeriodKpis]=useState(kpis);
+  const [periodStress,setPeriodStress]=useState(stress);
+  const [periodBudget,setPeriodBudget]=useState(budget);
+  const [periodHistory,setPeriodHistory]=useState([]);
+  const [params,setParams]=useState(()=>{const i={};PARAMS.forEach(p=>{i[p.id]=10;});return i;});
+  const [showToast,setShowToast]=useState(true); // show event toast on mount
+
+  const totalAlloc=Object.values(params).reduce((s,v)=>s+v,0);
+  const setParam=useCallback((id,val)=>setParams(prev=>({...prev,[id]:val})),[]);
+  const liveImpacts=useMemo(()=>computeImpact({params,archetype,selectedKPIs,kpiPool,kpis:periodKpis}),[params,archetype,selectedKPIs,kpiPool,periodKpis]);
+
+  const commitPeriod=()=>{
+    const result=simulateYear({kpis:periodKpis,params,archetype,sectors,fundingSource,deliveryMode,year,stress:periodStress});
+    const newHist=[...periodHistory,{period,kpisBefore:periodKpis,result}];
+    setPeriodHistory(newHist);
+    setPeriodKpis(result.newKpis);
+    setPeriodStress(result.newStress);
+    setPeriodBudget(result.nextBudget);
+    if(period+1>=cadence.periods){
+      const avgScore=Math.round(newHist.reduce((s,h)=>s+h.result.yearScore,0)/newHist.length);
+      onYearComplete({finalKpis:result.newKpis,finalStress:result.newStress,nextBudget:result.nextBudget,yearScore:avgScore,periodHistory:newHist,event});
+    } else {
+      setPeriod(period+1);
+      setShowToast(result.newStress>7); // show stress alert if stress spiked
+      setParams(()=>{const i={};PARAMS.forEach(p=>{i[p.id]=10;});return i;});
+    }
+  };
+
+  const allocPct=Math.round((totalAlloc/100)*periodBudget*10)/10;
+
+  return (
+    <div style={{maxWidth:1200,margin:"0 auto",padding:"22px 20px",position:"relative"}}>
+
+      {/* Animated event/stress toast */}
+      {showToast&&(
+        <EventToast
+          event={event}
+          stress={periodStress}
+          archColor={a.color}
+          onDismiss={()=>setShowToast(false)}
+        />
+      )}
+
+      {/* ── TOP HEADER ── */}
+      <div style={{marginBottom:18,borderBottom:`1px solid ${T.border}`,paddingBottom:16}}>
+        {/* Year + period context */}
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap",gap:12,marginBottom:12}}>
+          <div>
+            <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:8}}>
+              <span style={mkPill(a.color)}>{a.icon} {a.label}</span>
+              <span style={mkPill("#475569")}>Year {year} / 5</span>
+              <span style={mkPill("#7c3aed")}>{cadence.label}</span>
+              <span style={mkPill(periodStress>7?"#dc2626":periodStress>4?"#d97706":"#059669")}>
+                {periodStress>7?"🔴":"periodStress>4"?"🟡":"🟢"} Stress {periodStress.toFixed(1)}
+              </span>
+              {sectors.length>1&&<span style={mkPill("#0284c7")}>Focus {sectors.length===2?"0.85×":"0.70×"}</span>}
+            </div>
+            <h2 style={{fontWeight:800,fontSize:20,color:T.text,letterSpacing:"-0.01em"}}>
+              Strategic Budget Allocation — {cadence.pLabel(period)}
+            </h2>
+          </div>
+
+          {/* Budget display — prominent */}
+          <div style={{background:"#0f172a",borderRadius:10,padding:"14px 22px",textAlign:"right",minWidth:180}}>
+            <div style={{fontSize:9,color:"#64748b",fontWeight:700,textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:4}}>Total Budget</div>
+            <div style={{fontFamily:T.mono,fontWeight:800,fontSize:28,color:"#f1f5f9",lineHeight:1}}>₹{periodBudget.toFixed(1)} Cr</div>
+            <div style={{fontSize:10,fontFamily:T.mono,color:Math.abs(totalAlloc-100)<=1?"#4ade80":"#f87171",marginTop:5,fontWeight:600}}>
+              {totalAlloc}/100 units · ₹{allocPct} Cr deployed
+            </div>
+          </div>
+        </div>
+
+        {/* Period progress pips */}
+        {cadence.periods>1&&(
+          <div style={{display:"flex",gap:6,alignItems:"center"}}>
+            {Array.from({length:cadence.periods}).map((_,i)=>(
+              <div key={i} style={{display:"flex",alignItems:"center",gap:6}}>
+                <div style={{height:5,width:i<period?56:i===period?72:40,borderRadius:3,background:i<period?"#059669":i===period?a.color:T.track,transition:"all 0.3s ease"}}/>
+                {i===period&&<span style={{fontSize:9,color:a.color,fontWeight:700,fontFamily:T.mono}}>NOW</span>}
+                {i<period&&(
+                  <span style={{fontSize:9,color:"#059669",fontWeight:700,fontFamily:T.mono}}>
+                    {periodHistory[i]?.result?.yearScore}%
+                  </span>
+                )}
+              </div>
+            ))}
+            <span style={{fontSize:9,color:T.textFaint,marginLeft:4}}>Period {period+1}/{cadence.periods}</span>
+          </div>
+        )}
+      </div>
+
+      {/* ── SETTLED EVENT BANNER (after toast dismisses) ── */}
+      {!showToast&&(
+        <div style={{background:"#fffbeb",border:`1px solid #fde68a`,borderLeft:`3px solid #f59e0b`,borderRadius:6,padding:"9px 14px",marginBottom:14,display:"flex",gap:10,alignItems:"flex-start"}}>
+          <span style={{fontSize:13}}>📡</span>
+          <div>
+            <span style={{fontWeight:700,fontSize:11,color:"#92400e",textTransform:"uppercase",letterSpacing:"0.03em"}}>{event.name} · </span>
+            <span style={{fontSize:11,color:"#78350f"}}>{event.desc}</span>
+          </div>
+        </div>
+      )}
+
+      {/* ── 2-PANEL ── */}
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:18,marginBottom:18}} className="play-grid">
+
+        {/* LEFT — Institutional Performance Chart (screenshot style) */}
+        <div style={{background:T.surface,border:`1px solid ${T.border}`,borderRadius:10,padding:"20px 22px",display:"flex",flexDirection:"column"}}>
+          <div style={{fontSize:10,fontWeight:800,color:T.textMuted,textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:18}}>
+            Institutional Performance Chart
+          </div>
+          <div style={{overflowY:"auto",flex:1,maxHeight:480,paddingRight:6}}>
+            {selectedKPIs.map(kpiId=>{
+              const def=kpiPool.find(k=>k.id===kpiId);
+              if(!def) return null;
+              const val=periodKpis[kpiId]??def.base;
+              const imp=liveImpacts[kpiId]||{delta:0,pct:0};
+              const delta=imp.delta;
+              const isGood=def.inverse?delta<0:delta>0;
+              const barPct=def.inverse?Math.max(0,100-Math.min(100,val)):Math.min(100,Math.max(0,val));
+              const projPct=def.inverse?Math.max(0,100-Math.min(100,val+delta)):Math.min(100,Math.max(0,val+delta));
+              const target=endGoalDef?.kpiTargets?.[kpiId];
+              const targetPct=target!=null?(def.inverse?Math.max(0,100-Math.min(100,target)):Math.min(100,target)):null;
+
+              return (
+                <div key={kpiId} style={{marginBottom:18}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:6}}>
+                    <span style={{fontSize:13,fontWeight:600,color:T.text}}>{def.label}</span>
+                    <div style={{display:"flex",alignItems:"center",gap:8}}>
+                      <span style={{fontFamily:T.mono,fontWeight:700,fontSize:13,color:T.text}}>{val.toFixed(1)}</span>
+                      <span style={{fontFamily:T.mono,fontWeight:700,fontSize:12,color:isGood?"#059669":"#dc2626"}}>
+                        {delta>=0?"+":""}{delta.toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+                  <div style={{height:9,background:"#f1f5f9",borderRadius:5,position:"relative",overflow:"visible"}}>
+                    {/* Base fill */}
+                    <div style={{position:"absolute",left:0,top:0,height:"100%",width:`${Math.max(1,barPct)}%`,background:a.color,opacity:0.25,borderRadius:5}}/>
+                    {/* Projected fill */}
+                    <div style={{position:"absolute",left:0,top:0,height:"100%",width:`${Math.max(1,projPct)}%`,background:a.color,borderRadius:5,transition:"width 0.18s ease"}}/>
+                    {/* Target marker */}
+                    {targetPct!=null&&(
+                      <div style={{position:"absolute",top:-3,bottom:-3,left:`${targetPct}%`,width:2,background:"#f59e0b",borderRadius:1,boxShadow:"0 0 4px #f59e0b80"}} title={`Target: ${target}`}/>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Period result chips */}
+          {periodHistory.length>0&&(
+            <div style={{marginTop:14,paddingTop:12,borderTop:`1px solid ${T.border}`,display:"flex",gap:8,flexWrap:"wrap"}}>
+              {periodHistory.map(h=>(
+                <div key={h.period} style={{background:h.result.yearScore>=35?`${a.color}18`:T.surfaceAlt,border:`1px solid ${h.result.yearScore>=35?a.color:T.border}`,borderRadius:6,padding:"4px 10px",textAlign:"center"}}>
+                  <div style={{fontSize:9,color:T.textFaint,fontFamily:T.mono}}>{cadence.pLabel(h.period)}</div>
+                  <div style={{fontFamily:T.mono,fontWeight:800,fontSize:15,color:h.result.yearScore>=35?"#059669":"#dc2626"}}>{h.result.yearScore}%</div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* RIGHT — Strategic Budget Allocation (screenshot style) */}
+        <div style={{background:T.surface,border:`1px solid ${T.border}`,borderRadius:10,padding:"20px 22px",display:"flex",flexDirection:"column"}}>
+          <div style={{fontSize:10,fontWeight:800,color:T.textMuted,textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:18}}>
+            Strategic Budget Allocation
+          </div>
+
+          {/* Sliders — styled exactly like screenshot */}
+          <div style={{flex:1,overflowY:"auto",paddingRight:4}}>
+            {PARAMS.map(p=>{
+              const pct=(params[p.id]/40)*100;
+              return (
+                <div key={p.id} style={{marginBottom:24}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+                    <span style={{fontWeight:700,fontSize:14,color:T.text}}>{p.icon} &nbsp;{p.label}</span>
+                    <span style={{fontFamily:T.mono,fontWeight:800,fontSize:16,color:p.color}}>{params[p.id]}%</span>
+                  </div>
+                  <div style={{position:"relative",height:24,display:"flex",alignItems:"center"}}>
+                    {/* Track */}
+                    <div style={{position:"absolute",left:0,right:0,height:8,borderRadius:4,background:"#e2e8f0",overflow:"hidden"}}>
+                      <div style={{width:`${pct}%`,height:"100%",background:`linear-gradient(90deg,${p.color}cc,${p.color})`,borderRadius:4,transition:"width 0.08s"}}/>
+                    </div>
+                    {/* Native range (invisible, on top for interaction) */}
+                    <input type="range" min={0} max={40} value={params[p.id]}
+                      onChange={e=>setParam(p.id,Number(e.target.value))}
+                      style={{position:"absolute",left:0,right:0,width:"100%",opacity:0,cursor:"pointer",height:24,zIndex:2}}
+                    />
+                    {/* Custom thumb */}
+                    <div style={{position:"absolute",left:`calc(${pct}% - 10px)`,width:20,height:20,borderRadius:"50%",background:"#fff",border:`3px solid ${p.color}`,boxShadow:`0 2px 8px ${p.color}55`,pointerEvents:"none",transition:"left 0.08s",zIndex:1}}/>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Commit button — full width at bottom, archetype color */}
+          <div style={{marginTop:8,borderTop:`1px solid ${T.border}`,paddingTop:16}}>
+            <button
+              onClick={commitPeriod}
+              style={{...mkBtn(a.color),width:"100%",padding:"14px",fontSize:14,fontWeight:700,borderRadius:8}}
+            >
+              Commit Decision for {cadence.pLabel(period)} →
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════
+//  YEAR RESULT
+// ═══════════════════════════════════════════════════════
+function YearResult({yearData,gameState,onNext}){
+  const {yearScore,finalKpis,finalStress,nextBudget,periodHistory}=yearData;
+  const a=ARCHETYPES.find(x=>x.id===gameState.archetype);
+  const sc=yearScore>=55?"#059669":yearScore>=30?"#d97706":"#dc2626";
+  return (
+    <div style={{maxWidth:1000,margin:"0 auto",padding:"28px 20px"}}>
+      <div style={{marginBottom:20}}>
+        <span style={mkPill(a.color)}>Year {gameState.year} — Performance Review</span>
+        <h2 style={{fontWeight:700,fontSize:28,color:T.text,marginTop:8}}>
+          {yearScore>=55?"Above Target":yearScore>=30?"On Target":"Below Target"}
+        </h2>
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"180px 1fr",gap:16,marginBottom:28}} className="result-header-grid">
+        <div style={{...mkCard(sc,true),justifyContent:"center",alignItems:"center"}}>
+          <div style={{fontFamily:T.mono,fontWeight:800,fontSize:52,color:sc,textAlign:"center",lineHeight:1}}>{yearScore}%</div>
+          <div style={{fontSize:10,color:T.textMuted,textAlign:"center",textTransform:"uppercase",marginTop:6}}>Performance Index</div>
+        </div>
+        <div style={mkCard()}>
+          <div style={{display:"flex",flexDirection:"column",gap:14,padding:"4px 0"}}>
+            <div style={{display:"flex",justifyContent:"space-between"}}><span style={{color:T.textMuted,fontSize:13}}>Next Cycle Budget</span><span style={{fontFamily:T.mono,fontWeight:700,color:T.text}}>₹{nextBudget.toFixed(1)} Cr</span></div>
+            <div style={{display:"flex",justifyContent:"space-between"}}><span style={{color:T.textMuted,fontSize:13}}>Operational Friction</span><span style={{fontFamily:T.mono,fontWeight:700,color:finalStress>7?"#dc2626":"#059669"}}>{finalStress.toFixed(1)} / 10</span></div>
+            <div style={{display:"flex",justifyContent:"space-between"}}><span style={{color:T.textMuted,fontSize:13}}>Periods Completed</span><span style={{fontFamily:T.mono,fontWeight:700,color:a.color}}>{periodHistory.length}</span></div>
+            {finalStress>7&&<div style={{fontSize:12,color:"#dc2626",background:"#fef2f2",border:"1px solid #fecaca",borderRadius:6,padding:"8px 12px"}}>⚠ High stress penalising KPI delivery. Invest more in trainer hiring next year.</div>}
+          </div>
+        </div>
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))",gap:10,marginBottom:32}}>
+        {gameState.selectedKPIs.map(kpiId=>{
+          const def=gameState.kpiPool.find(k=>k.id===kpiId);
+          const after=finalKpis[kpiId]??def?.base??0;
+          const before=gameState.kpis[kpiId]??def?.base??0;
+          const diff=after-before;
+          const good=def?.inverse?diff<0:diff>0;
+          const note=yearData.periodHistory.at(-1)?.result?.narratives?.[kpiId]||(good?"Improving steadily.":"Needs more investment.");
+          return (
+            <div key={kpiId} style={{...mkCard(),padding:"14px 16px"}}>
+              <div style={{fontSize:9,color:T.textFaint,fontWeight:700,textTransform:"uppercase",marginBottom:7,lineHeight:1.3}}>{def?.label}</div>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:6}}>
+                <span style={{fontFamily:T.mono,fontWeight:700,fontSize:18,color:good?"#059669":"#dc2626"}}>{after.toFixed(1)}</span>
+                <span style={{fontSize:11,color:good?"#059669":"#dc2626",fontWeight:600}}>{good?"▲":"▼"} {Math.abs(diff).toFixed(1)}</span>
+              </div>
+              <div style={{fontSize:10,color:T.textFaint,lineHeight:1.45}}>{note}</div>
+            </div>
+          );
+        })}
+      </div>
+      <div style={{display:"flex",justifyContent:"flex-end"}}>
+        <button onClick={onNext} style={{...mkBtn(a.color),padding:"12px 36px"}}>
+          {gameState.year<5?`Proceed to Year ${gameState.year+1} →`:"View Final Report →"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════
+//  FINAL RESULTS
+// ═══════════════════════════════════════════════════════
+function FinalResults({gameState,yearHistory}){
+  const a=ARCHETYPES.find(x=>x.id===gameState.archetype);
+  const endGoal=a.endGoals.find(g=>g.id===gameState.endGoal);
+  const finalKPIs=gameState.kpis;
+
+  // ── End goal verdict ──
+  let goalMet=0,goalTotal=0;
+  const goalDetails=[];
+  Object.entries(endGoal.kpiTargets).forEach(([kpiId,target])=>{
+    goalTotal++;
+    const val=finalKPIs[kpiId];
+    const def=gameState.kpiPool.find(kp=>kp.id===kpiId)||ARCHETYPES.flatMap(x=>x.kpiPool).find(kp=>kp.id===kpiId);
+    const met=val!==undefined&&(def?.inverse?val<=target:val>=target);
+    if(met) goalMet++;
+    if(def) goalDetails.push({def,val:val??def.base,target,met,inverse:def.inverse});
+  });
+  const goalPct=Math.round((goalMet/goalTotal)*100);
+  const endGoalAchieved=goalMet===goalTotal;
+
+  // ── KPI analysis ──
+  let totalGood=0,totalKPIs=0;
+  const kpiAnalysis=[];
+  gameState.selectedKPIs.forEach(kpiId=>{
+    const def=gameState.kpiPool.find(k=>k.id===kpiId);
+    if(!def) return;
+    totalKPIs++;
+    const start=def.base;
+    const end=finalKPIs[kpiId]??start;
+    const diff=end-start;
+    const pctChange=start>0?Math.round((diff/start)*100):0;
+    const good=def.inverse?diff<0:diff>0;
+    if(good) totalGood++;
+    const target=endGoal.kpiTargets[kpiId];
+    const targetMet=target!=null?(def.inverse?end<=target:end>=target):null;
+    // insight text
+    const insight=good
+      ? (Math.abs(pctChange)>20?"Strong growth — a key driver of your strategy.":Math.abs(pctChange)>8?"Steady improvement over 5 years.":"Modest gains — could be pushed further with more investment.")
+      : (Math.abs(pctChange)>15?"Significant decline — this hurt overall performance.":"Slight regression — needs strategic attention next run.");
+    const improve=good
+      ? (Math.abs(pctChange)<10?"To maximise: increase Faculty and Programme budget allocation.":"Keep this mix — it's working well for this KPI.")
+      : "To improve: rebalance toward Faculty Hiring and Programme Quality early on.";
+    kpiAnalysis.push({def,start,end,diff,pctChange,good,targetMet,insight,improve});
+  });
+  const kpiScore=Math.round((totalGood/totalKPIs)*100);
+
+  const avgStress=yearHistory.length?yearHistory.reduce((s,y)=>s+(y.stress||0),0)/yearHistory.length:3;
+  const stability=Math.round(Math.max(0,100-avgStress*9));
+  const overall=Math.round(goalPct*0.4+kpiScore*0.35+stability*0.25);
+  const grade=overall>=85?"S":overall>=70?"A":overall>=55?"B":overall>=40?"C":"D";
+  const gc={S:"#059669",A:"#2563eb",B:"#d97706",C:"#c2410c",D:"#dc2626"}[grade];
+
+  const strengths=kpiAnalysis.filter(k=>k.good&&Math.abs(k.pctChange)>8);
+  const weaknesses=kpiAnalysis.filter(k=>!k.good||Math.abs(k.pctChange)<5);
+
+  return (
+    <div style={{maxWidth:1060,margin:"0 auto",padding:"36px 20px"}}>
+
+      {/* ── TOP: End Goal Verdict ── */}
+      <div style={{
+        background:endGoalAchieved?"linear-gradient(135deg,#064e3b,#065f46)":"linear-gradient(135deg,#450a0a,#7f1d1d)",
+        borderRadius:16,padding:"32px 36px",marginBottom:28,display:"flex",alignItems:"center",gap:28,flexWrap:"wrap"
+      }}>
+        <div style={{fontSize:56,lineHeight:1}}>{endGoalAchieved?"🏆":"📋"}</div>
+        <div style={{flex:1}}>
+          <div style={{fontSize:10,fontWeight:700,color:endGoalAchieved?"#6ee7b7":"#fca5a5",textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:6}}>
+            5-Year End Goal
+          </div>
+          <h2 style={{fontWeight:800,fontSize:26,color:"#fff",marginBottom:6,lineHeight:1.2}}>{endGoal.label}</h2>
+          <div style={{display:"flex",alignItems:"center",gap:12,flexWrap:"wrap"}}>
+            <span style={{
+              background:endGoalAchieved?"#059669":"#dc2626",
+              color:"#fff",fontWeight:800,fontSize:15,padding:"6px 18px",borderRadius:20
+            }}>
+              {endGoalAchieved?"✓ GOAL ACHIEVED":"✗ GOAL NOT ACHIEVED"}
+            </span>
+            <span style={{color:endGoalAchieved?"#a7f3d0":"#fecaca",fontSize:13}}>
+              {goalMet} of {goalTotal} critical targets met
+            </span>
+          </div>
+        </div>
+        <div style={{textAlign:"right"}}>
+          <div style={{fontFamily:T.mono,fontSize:60,fontWeight:800,color:gc,lineHeight:1}}>{grade}</div>
+          <div style={{fontFamily:T.mono,fontSize:18,color:"rgba(255,255,255,0.7)",marginTop:2}}>{overall} / 100</div>
+          <div style={{fontSize:9,color:"rgba(255,255,255,0.4)",textTransform:"uppercase",marginTop:3}}>Overall Score</div>
+        </div>
+      </div>
+
+      {/* ── SCORE BREAKDOWN ── */}
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(260px,1fr))",gap:16,marginBottom:28}}>
+        {[
+          {label:"End Goal Achievement",score:goalPct,color:endGoalAchieved?"#059669":"#dc2626",sub:`${goalMet}/${goalTotal} targets met`,icon:"🎯"},
+          {label:"KPI Growth",score:kpiScore,color:a.color,sub:`${totalGood}/${totalKPIs} KPIs improved over baseline`,icon:"📈"},
+          {label:"Operational Stability",score:stability,color:"#7c3aed",sub:`Avg stress index: ${avgStress.toFixed(1)} / 10`,icon:"⚙️"},
+        ].map(s=>(
+          <div key={s.label} style={{...mkCard(),padding:"18px 20px"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+              <div>
+                <span style={{fontSize:14}}>{s.icon}</span>
+                <span style={{fontWeight:700,fontSize:13,color:T.text,marginLeft:6}}>{s.label}</span>
+              </div>
+              <span style={{fontFamily:T.mono,fontWeight:800,fontSize:20,color:s.color}}>{s.score}%</span>
+            </div>
+            <div style={{height:8,background:T.track,borderRadius:4,marginBottom:8}}>
+              <div style={{height:"100%",width:`${s.score}%`,background:s.color,borderRadius:4,transition:"width 0.6s ease"}}/>
+            </div>
+            <div style={{fontSize:10,color:T.textFaint}}>{s.sub}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* ── KPI JOURNEY: full detail ── */}
+      <div style={{...mkCard(),marginBottom:24}}>
+        <div style={{fontSize:10,fontWeight:700,color:T.textMuted,textTransform:"uppercase",marginBottom:20,letterSpacing:"0.06em"}}>
+          5-Year KPI Performance Analysis
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(300px,1fr))",gap:14}}>
+          {kpiAnalysis.map(({def,start,end,diff,pctChange,good,targetMet,insight,improve})=>(
+            <div key={def.id} style={{
+              background:good?`${a.color}08`:"#fff1f2",
+              border:`1.5px solid ${good?a.color+"33":"#fecaca"}`,
+              borderRadius:10,padding:"14px 16px"
+            }}>
+              {/* Header row */}
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
+                <div>
+                  <div style={{fontSize:12,fontWeight:700,color:T.text,marginBottom:2}}>{def.label}</div>
+                  {targetMet!=null&&(
+                    <span style={{...mkPill(targetMet?"#059669":"#dc2626"),fontSize:8}}>
+                      {targetMet?"✓ Target Met":"✗ Target Missed"}
+                    </span>
+                  )}
+                </div>
+                <div style={{textAlign:"right"}}>
+                  <div style={{fontFamily:T.mono,fontWeight:800,fontSize:20,color:good?"#059669":"#dc2626",lineHeight:1}}>
+                    {end.toFixed(1)}<span style={{fontSize:11}}>{def.unit}</span>
+                  </div>
+                  <div style={{fontSize:10,color:good?"#059669":"#dc2626",fontWeight:600}}>
+                    {diff>=0?"+":""}{diff.toFixed(1)} ({pctChange>=0?"+":""}{pctChange}%)
+                  </div>
+                </div>
+              </div>
+              {/* Progress bar: start → end */}
+              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10,fontSize:10,color:T.textFaint}}>
+                <span style={{fontFamily:T.mono}}>{start}{def.unit}</span>
+                <div style={{flex:1,height:6,background:"#f1f5f9",borderRadius:3,position:"relative"}}>
+                  <div style={{height:"100%",width:`${Math.min(100,Math.max(2,(def.inverse?100-Math.min(100,end):Math.min(100,end))))}%`,background:good?a.color:"#dc2626",borderRadius:3}}/>
+                </div>
+                <span style={{fontFamily:T.mono,fontWeight:700,color:good?a.color:"#dc2626"}}>{end.toFixed(1)}{def.unit}</span>
+              </div>
+              {/* Insight */}
+              <div style={{fontSize:11,color:"#475569",lineHeight:1.5,marginBottom:6}}>
+                <span style={{fontWeight:600,color:good?"#059669":"#dc2626"}}>{good?"✓ What's working: ":"⚠ What needs work: "}</span>
+                {insight}
+              </div>
+              <div style={{fontSize:10,color:T.textFaint,lineHeight:1.45,borderTop:`1px solid ${T.border}`,paddingTop:6}}>
+                💡 {improve}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ── STRATEGIC SUMMARY ── */}
+      <div style={{background:"#0f172a",borderRadius:12,padding:"26px 30px",color:"#f1f5f9",marginBottom:28}}>
+        <div style={{fontSize:10,fontWeight:700,color:"#64748b",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:20}}>
+          Strategic Debrief
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(220px,1fr))",gap:20,marginBottom:20}}>
+          <div>
+            <div style={{fontSize:10,color:"#94a3b8",fontWeight:700,marginBottom:8,textTransform:"uppercase"}}>🟢 Strengths</div>
+            {strengths.length>0?strengths.map(k=>(
+              <div key={k.def.id} style={{fontSize:12,color:"#a7f3d0",marginBottom:4}}>• {k.def.label} (+{Math.abs(k.pctChange)}%)</div>
+            )):<div style={{fontSize:12,color:"#64748b"}}>No standout strengths this run.</div>}
+          </div>
+          <div>
+            <div style={{fontSize:10,color:"#94a3b8",fontWeight:700,marginBottom:8,textTransform:"uppercase"}}>🔴 Areas to Improve</div>
+            {weaknesses.length>0?weaknesses.slice(0,4).map(k=>(
+              <div key={k.def.id} style={{fontSize:12,color:"#fca5a5",marginBottom:4}}>• {k.def.label} {k.good?`(only +${Math.abs(k.pctChange)}%)`:""}</div>
+            )):<div style={{fontSize:12,color:"#64748b"}}>Excellent — all KPIs performed well.</div>}
+          </div>
+          <div>
+            <div style={{fontSize:10,color:"#94a3b8",fontWeight:700,marginBottom:8,textTransform:"uppercase"}}>📊 Context</div>
+            <div style={{fontSize:12,color:"#cbd5e1",lineHeight:1.7}}>
+              Archetype: <b style={{color:"#fff"}}>{a.label}</b><br/>
+              Sectors: <b style={{color:"#fff"}}>{gameState.sectors.length}</b> chosen<br/>
+              Funding: <b style={{color:"#fff"}}>{FUNDING_SOURCES.find(f=>f.id===gameState.fundingSource)?.label||"—"}</b><br/>
+              Avg Stress: <b style={{color:avgStress>6?"#f87171":"#4ade80"}}>{avgStress.toFixed(1)} / 10</b>
+            </div>
+          </div>
+        </div>
+        <div style={{borderTop:"1px solid #1e293b",paddingTop:16,fontSize:13,color:"#94a3b8",lineHeight:1.7}}>
+          {endGoalAchieved
+            ? `🏆 You achieved the "${endGoal.label}" mandate — a ${grade}-grade result. ${stability>70?"Operational stability was a key asset.":"Managing stress earlier would have unlocked higher performance."}`
+            : `📋 The "${endGoal.label}" mandate was ${goalPct}% complete. ${goalMet<goalTotal-1?"Multiple targets were missed — consider a more focused KPI selection.":"You were close — one more focused year could have sealed it."} Grade: ${grade} (${overall}/100).`
+          }
+        </div>
+      </div>
+
+      <div style={{textAlign:"center"}}>
+        <button onClick={()=>window.location.reload()} style={{...mkBtn(T.primary),padding:"14px 48px",fontSize:15}}>
+          🔄 Run a New Simulation
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════
+//  MAIN CONTROLLER
+// ═══════════════════════════════════════════════════════
+export default function InstituteCommand(){
+  const [screen,setScreen]=useState("welcome");
+  const [gs,setGs]=useState({});
+  const [history,setHistory]=useState([]);
+  const [lastYearData,setLastYearData]=useState(null);
+
+  const buildKPIs=(ids,pool)=>{ const k={}; ids.forEach(id=>{const d=pool.find(x=>x.id===id);if(d) k[id]=d.base;}); return k; };
+  const getExtras=(sectors,fundingSource,archetype)=>{
+    const arch=ARCHETYPES.find(a=>a.id===archetype);
+    const extras=[];
+    const funder=FUNDING_SOURCES.find(f=>f.id===fundingSource);
+    if(funder?.kpiBonus) Object.keys(funder.kpiBonus).forEach(k=>{if(!arch.kpiPool.find(kp=>kp.id===k)){const found=ARCHETYPES.flatMap(x=>x.kpiPool).find(kp=>kp.id===k);if(found&&!extras.find(e=>e.id===k)) extras.push({...found,tag:funder.label});}});
+    sectors.forEach(sid=>{const sec=SECTORS.find(s=>s.id===sid);if(sec?.salaryMult>1.1){const k="avg_salary";if(!arch.kpiPool.find(kp=>kp.id===k)&&!extras.find(e=>e.id===k)) extras.push({id:k,label:"Avg Starting Salary (LPA)",base:3.5,unit:"L",tag:sec.label});}});
+    return extras;
+  };
+
+  const handleSetup=(step,data)=>{
+    if(step==="archetype"){setGs(g=>({...g,...data}));setScreen("kpis");}
+    else if(step==="kpis"){setGs(g=>({...g,...data}));setScreen("sectors");}
+    else if(step==="sectors"){setGs(g=>({...g,...data}));setScreen("funding");}
+    else if(step==="funding"){
+      const funder=FUNDING_SOURCES.find(f=>f.id===data.fundingSource);
+      const budgetStart=Math.round(100*(funder?.budgetMult||1));
+      const extras=getExtras(gs.sectors||[],data.fundingSource,gs.archetype);
+      const mergedPool=[...gs.kpiPool||[]];
+      extras.forEach(e=>{if(!mergedPool.find(k=>k.id===e.id)) mergedPool.push(e);});
+      let mergedSelected=[...gs.selectedKPIs||[]];
+      extras.forEach(e=>{if(mergedSelected.length<10&&!mergedSelected.includes(e.id)) mergedSelected.push(e.id);});
+      const kpis=buildKPIs(mergedSelected,mergedPool);
+      setGs(g=>({...g,...data,selectedKPIs:mergedSelected,kpiPool:mergedPool,year:1,budget:budgetStart,stress:0,kpis}));
+      setScreen("blueprint");
+    }
+  };
+
+  const handleYearComplete=(yearData)=>{
+    setLastYearData({...yearData,year:gs.year});
+    setGs(g=>({...g,kpis:yearData.finalKpis,stress:yearData.finalStress,budget:yearData.nextBudget}));
+    setHistory(h=>[...h,{year:gs.year,yearScore:yearData.yearScore,stress:yearData.finalStress}]);
+    setScreen("yearResult");
+  };
+
+  const handleNext=()=>{
+    if(gs.year>=5) setScreen("final");
+    else {setGs(g=>({...g,year:g.year+1}));setScreen("year");}
+  };
+
+  return (
+    <>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap');
+        *{box-sizing:border-box;margin:0;padding:0;}
+        body{font-family:'Inter',-apple-system,sans-serif;-webkit-font-smoothing:antialiased;background:#f8fafc;}
+        button:hover{opacity:0.88;}
+        ::-webkit-scrollbar{width:4px;} ::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:2px;}
+        .play-grid{grid-template-columns:1fr 1fr;}
+        .result-header-grid{grid-template-columns:180px 1fr;}
+        @media(max-width:860px){.play-grid,.result-header-grid{grid-template-columns:1fr!important;}}
+      `}</style>
+      <div style={{minHeight:"100vh",background:T.bg,color:T.text,fontFamily:T.font}}>
+        {screen!=="welcome"&&(
+          <div style={{background:"rgba(255,255,255,0.95)",borderBottom:`1px solid ${T.border}`,padding:"10px 24px",display:"flex",alignItems:"center",justifyContent:"space-between",position:"sticky",top:0,zIndex:100,backdropFilter:"blur(8px)"}}>
+            <div style={{fontWeight:800,fontSize:14,color:T.text}}>🏛️ Institute<span style={{color:T.primary}}>Command</span></div>
+            <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
+              {gs.archetype&&(()=>{const a=ARCHETYPES.find(x=>x.id===gs.archetype);return a?<span style={mkPill(a.color)}>{a.label}</span>:null;})()}
+              {gs.year&&<span style={mkPill("#475569")}>Year {gs.year}/5</span>}
+            </div>
+          </div>
+        )}
+        {screen==="welcome"&&<Welcome onStart={()=>setScreen("archetype")}/>}
+        {screen==="archetype"&&<ArchetypeStep onNext={d=>handleSetup("archetype",d)}/>}
+        {screen==="kpis"&&<KPIStep archetype={gs.archetype} extraKpiIds={[]} onNext={d=>handleSetup("kpis",d)} onBack={()=>setScreen("archetype")}/>}
+        {screen==="sectors"&&<SectorStep archetype={gs.archetype} onNext={d=>handleSetup("sectors",d)} onBack={()=>setScreen("kpis")}/>}
+        {screen==="funding"&&<FundingStep archetype={gs.archetype} sectors={gs.sectors||[]} onNext={d=>handleSetup("funding",d)} onBack={()=>setScreen("sectors")}/>}
+        {screen==="blueprint"&&<BlueprintStep gameState={gs} onConfirm={()=>setScreen("year")}/>}
+        {screen==="year"&&<YearPlay gameState={gs} onYearComplete={handleYearComplete}/>}
+        {screen==="yearResult"&&lastYearData&&<YearResult yearData={lastYearData} gameState={gs} onNext={handleNext}/>}
+        {screen==="final"&&<FinalResults gameState={gs} yearHistory={history}/>}
+      </div>
+    </>
+  );
+}
